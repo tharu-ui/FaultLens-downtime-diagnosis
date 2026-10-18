@@ -12,6 +12,8 @@ Contribution (do NOT claim more):
 
 Research question: Does combining data-quality scoring with perturbation-based stability testing reduce confidently incorrect diagnoses, at an acceptable abstention rate, versus (a) a frequency baseline and (b) a calibrated confidence-threshold baseline?
 
+Environment: Python 3.13, pandas<3, Windows, venv.
+
 ## Hard rules
 - All data is synthetic (disclose everywhere). No real data, no network calls at runtime, no API keys in the repo.
 - Never write "first", "no tool does this", "current tools give no warning", "revolutionary".
