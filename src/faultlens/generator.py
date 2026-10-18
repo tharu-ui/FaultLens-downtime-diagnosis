@@ -167,10 +167,21 @@ def generate_scenario(
     # Select dominant pair or close competitors to enforce margin control
     machine_names = list(machines_cfg.keys())
     primary_machine = rng.choice(machine_names)
-    primary_cause = rng.choice(all_causes)
+
+    # For easy mode, pick one of the primary machine's top natural causes so dominance is guaranteed
+    p_props = machines_cfg[primary_machine].get("cause_propensities", {})
+    sorted_p_causes = sorted(p_props.keys(), key=lambda c: p_props[c], reverse=True)
+    if target_difficulty == "easy":
+        primary_cause = sorted_p_causes[0]  # Top natural cause
+    else:
+        primary_cause = rng.choice(all_causes)
 
     competitor_machine = rng.choice([m for m in machine_names])
-    competitor_cause = rng.choice([c for c in all_causes if (competitor_machine, c) != (primary_machine, primary_cause)])
+    c_props = machines_cfg[competitor_machine].get("cause_propensities", {})
+    sorted_c_causes = sorted(c_props.keys(), key=lambda c: c_props[c], reverse=True)
+    competitor_cause = sorted_c_causes[0] if (competitor_machine, sorted_c_causes[0]) != (primary_machine, primary_cause) else (
+        sorted_c_causes[1] if len(sorted_c_causes) > 1 else "jam"
+    )
 
     all_events: List[Dict[str, Any]] = []
 
@@ -188,9 +199,9 @@ def generate_scenario(
         probs = probs / probs.sum()
 
         if target_difficulty == "easy" and machine_id == primary_machine:
-            # Boost primary cause significantly
+            # Boost primary cause decisively
             idx = causes_list.index(primary_cause) if primary_cause in causes_list else 0
-            probs[idx] *= 2.5
+            probs[idx] *= 3.5
             probs = probs / probs.sum()
         elif target_difficulty == "close":
             if machine_id == primary_machine and primary_cause in causes_list:
@@ -225,7 +236,7 @@ def generate_scenario(
 
                 # Multiplier for dominant pair in easy mode
                 if target_difficulty == "easy" and (machine_id, chosen_cause) == (primary_machine, primary_cause):
-                    duration_min *= 1.35
+                    duration_min *= 2.0
                 elif target_difficulty == "close":
                     if (machine_id, chosen_cause) == (primary_machine, primary_cause):
                         duration_min *= 1.10

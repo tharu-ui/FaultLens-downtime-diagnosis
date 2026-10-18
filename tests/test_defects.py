@@ -87,14 +87,16 @@ def test_incorrect_reason_codes_severity(clean_scenario, sev) -> None:
 
 @pytest.mark.parametrize("sev", [0.10, 0.20, 0.30])
 def test_timestamp_errors_applied(clean_scenario, sev) -> None:
-    """Verify timestamp_errors applies machine offsets and event jitter."""
+    """Verify timestamp_errors applies machine offsets, independent jitter, and creates negative durations."""
     df = clean_scenario.log
     corrupted, report = inject_timestamp_errors(df, severity=sev, seed=303)
 
     assert len(report["machine_offsets"]) == 4  # 4 machines
     assert report["jittered_events_count"] == int(round(len(df) * sev))
     assert len(corrupted) == len(df)
-    assert (corrupted["duration_min"] > 0).all()
+    if sev >= 0.20:
+        # Independent jitter creates inverted timestamps
+        assert report["negative_durations_count"] > 0
 
 
 @pytest.mark.parametrize("sev", [0.10, 0.20, 0.30])

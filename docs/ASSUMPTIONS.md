@@ -35,8 +35,9 @@ This document records all domain, mathematical, and implementation assumptions m
 2. **Invariance of Truth**: Defect injectors are pure transformations that alter logged columns (`logged_reason`, `start_ts`, `end_ts`, row inclusions) but **NEVER** modify `true_cause` or `scenario.truth`.
 3. **Missing Events**: 50% of affected records are dropped completely (dropped telemetry packets); 50% have their `end_ts` set to null/NaN (unclosed stop intervals).
 4. **Incorrect Reason Codes**: Follow an industry-realistic confusion matrix reflecting operator shortcuts and alarm overlaps (e.g., swapping `sensor_fault` and `electrical_fault`, or labelling ambiguous halts as `Other/Unknown`).
-5. **Timestamp Errors**: Individual machine clocks experience constant offsets ($\pm 1$ to $15$ min) plus Gaussian communication jitter ($\sigma = 2.5$ min), causing event reordering and false interval overlaps.
-6. **Duplicate Records**: Ingestion pipeline retries and bounce contacts create duplicate single events (70%) and multi-record bursts of 3-10 repeated records within 45 seconds (30%).
+5. **Timestamp Errors**: Individual machine clocks experience systematic offsets ($\pm 1$ to $15$ min) and an affected fraction of events experiences independent Gaussian start/end communication jitter ($\sigma$ up to 14 min at 30% severity). This generates erroneous durations, timestamp inversions ($\text{end\_ts} \le \text{start\_ts}$), and same-machine interval overlaps.
+6. **Non-Positive Duration Exclusion**: The shared diagnoser strictly filters out non-positive durations ($\text{duration\_min} \le 0$) and unclosed stops ($\text{end\_ts} \text{ is null}$), counting them as invalid events. Corrupted negative intervals are excluded from downtime accumulation, directly degrading candidate rankings under timestamp noise.
+7. **Duplicate Records**: Ingestion pipeline retries and bounce contacts create duplicate single events (70%) and multi-record bursts of 3-10 repeated records within 45 seconds (30%).
 
 ## 4. Diagnoser & Confidence Metric Assumptions
 

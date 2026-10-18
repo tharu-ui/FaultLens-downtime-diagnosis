@@ -1,0 +1,10 @@
+Defect Condition,Freq Acc%,Freq CW%,Freq Cov%,ConfThresh Acc%,ConfThresh CW%,ConfThresh Cov%,FaultLens Acc%,FaultLens CW%,FaultLens Cov%
+Clean (0%),100.0,0.0,100.0,100.0,0.0,100.0,66.7,0.0,66.7
+missing_events (20%),78.3,21.7,100.0,78.3,21.7,100.0,63.3,11.7,75.0
+missing_events (30%),73.3,26.7,100.0,73.3,26.7,100.0,51.7,11.7,63.3
+incorrect_reason_codes (20%),78.3,21.7,100.0,78.3,21.7,100.0,55.0,13.3,68.3
+incorrect_reason_codes (30%),51.7,48.3,100.0,51.7,48.3,100.0,38.3,16.7,55.0
+timestamp_errors (20%),83.3,16.7,100.0,83.3,16.7,100.0,61.7,5.0,66.7
+timestamp_errors (30%),85.0,15.0,100.0,85.0,15.0,100.0,70.0,5.0,75.0
+duplicate_records (20%),40.0,60.0,100.0,40.0,60.0,100.0,38.3,50.0,88.3
+duplicate_records (30%),43.3,56.7,100.0,43.3,56.7,100.0,40.0,48.3,88.3

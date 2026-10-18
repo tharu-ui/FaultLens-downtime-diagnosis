@@ -188,9 +188,14 @@ def inject_timestamp_errors(
     seed: int,
     config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Inject timestamp drift per machine and communication jitter causing false overlaps/reordering.
+    """Inject timestamp drift per machine and independent communication jitter.
 
-    Industrial grounding: Unsynchronized PLC clocks and network queue latency.
+    Applies per-machine clock offset plus independent Gaussian jitter on start_ts and end_ts,
+    causing erroneous durations, negative durations, out-of-order records, and same-machine overlaps.
+    The shared diagnoser skips non-positive durations, degrading effective candidate evidence.
+
+    Industrial grounding: Unsynchronized PLC clocks, asynchronous telemetry buffering, and transmission latency.
+    CRITICAL: Preserves true_cause and scenario.truth.
     """
     severity = _validate_severity(severity)
     corrupted = df.copy(deep=True)
@@ -206,9 +211,14 @@ def inject_timestamp_errors(
             "machine_offsets": {},
             "jittered_events_count": 0,
             "affected_fraction": 0.0,
+            "negative_durations_count": 0,
         }
 
     rng = np.random.default_rng(seed)
+
+    # Convert to clean datetime64[ns] Series to prevent pandas 3 / 2.x dtype assignment warnings
+    starts = pd.to_datetime(corrupted["start_ts"]).copy()
+    ends = pd.to_datetime(corrupted["end_ts"]).copy()
 
     # 1. Machine-level clock drift
     machines = list(corrupted["machine_id"].unique())
@@ -218,33 +228,36 @@ def inject_timestamp_errors(
     for m in machines:
         offset_min = float(rng.uniform(-15.0 * scale_factor, 15.0 * scale_factor))
         machine_offsets[m] = round(offset_min, 2)
-        m_mask = corrupted["machine_id"] == m
+        m_mask = (corrupted["machine_id"] == m).to_numpy()
         offset_delta = pd.to_timedelta(offset_min, unit="m")
-        corrupted.loc[m_mask, "start_ts"] += offset_delta
-        # If end_ts is not NaT, offset it as well
-        valid_end_mask = m_mask & corrupted["end_ts"].notna()
-        corrupted.loc[valid_end_mask, "end_ts"] += offset_delta
+        starts.loc[m_mask] = starts.loc[m_mask] + offset_delta
+        valid_end_mask = m_mask & ends.notna().to_numpy()
+        ends.loc[valid_end_mask] = ends.loc[valid_end_mask] + offset_delta
 
-    # 2. Random event-level jitter on a fraction of events
+    # 2. Independent event-level jitter on start_ts and end_ts for affected fraction
     n_jitter = int(round(n_total * severity))
     n_jitter = max(1, min(n_jitter, n_total))
     jitter_indices = rng.choice(corrupted.index.to_numpy(), size=n_jitter, replace=False)
 
-    jitter_std = 2.5 * scale_factor
-    jitter_values = rng.normal(loc=0.0, scale=max(0.5, jitter_std), size=len(jitter_indices))
+    # Jitter standard deviation scales with severity (up to 14 minutes at 30% severity)
+    jitter_std = max(2.5, 14.0 * scale_factor)
+    start_jitters = rng.normal(loc=0.0, scale=jitter_std, size=len(jitter_indices))
+    end_jitters = rng.normal(loc=0.0, scale=jitter_std, size=len(jitter_indices))
 
-    for idx, j_val in zip(jitter_indices, jitter_values):
-        j_delta = pd.to_timedelta(j_val, unit="m")
-        corrupted.at[idx, "start_ts"] += j_delta
-        if pd.notna(corrupted.at[idx, "end_ts"]):
-            corrupted.at[idx, "end_ts"] += j_delta
+    for i, idx in enumerate(jitter_indices):
+        starts.at[idx] = starts.at[idx] + pd.to_timedelta(start_jitters[i], unit="m")
+        if pd.notna(ends.at[idx]):
+            ends.at[idx] = ends.at[idx] + pd.to_timedelta(end_jitters[i], unit="m")
 
-    # Recompute duration_min for consistency where end_ts is valid
-    valid_dur_mask = corrupted["end_ts"].notna() & corrupted["start_ts"].notna()
-    diff_minutes = (corrupted.loc[valid_dur_mask, "end_ts"] - corrupted.loc[valid_dur_mask, "start_ts"]).dt.total_seconds() / 60.0
-    # Guard against negative durations caused by severe jitter
-    diff_minutes = diff_minutes.clip(lower=0.1)
-    corrupted.loc[valid_dur_mask, "duration_min"] = diff_minutes.round(2)
+    # Assign entire columns whole to avoid partial dtype assignment
+    corrupted["start_ts"] = starts
+    corrupted["end_ts"] = ends
+
+    # Recompute durations: independent jitter distorts durations and creates negative durations
+    dur_series = (ends - starts).dt.total_seconds() / 60.0
+    corrupted["duration_min"] = dur_series.round(2)
+
+    neg_count = int((corrupted["duration_min"] <= 0).sum())
 
     report = {
         "defect_type": "timestamp_errors",
@@ -255,6 +268,7 @@ def inject_timestamp_errors(
         "machine_offsets": machine_offsets,
         "jittered_events_count": len(jitter_indices),
         "affected_fraction": round(len(jitter_indices) / n_total, 4),
+        "negative_durations_count": neg_count,
     }
     return corrupted, report
 
