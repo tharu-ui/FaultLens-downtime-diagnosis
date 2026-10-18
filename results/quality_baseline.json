@@ -1,0 +1,19 @@
+{
+  "split_used": "train",
+  "num_scenarios": 120,
+  "baseline_overall_score": 1.0,
+  "baseline_sub_scores": {
+    "completeness": 1.0,
+    "reason_validity": 1.0,
+    "duplication": 1.0,
+    "timestamp_consistency": 1.0,
+    "micro_stop_plausibility": 1.0,
+    "alarm_reason_agreement": 1.0
+  },
+  "expected_micro_stop_rates": {
+    "Loader": 0.1175,
+    "Press": 0.0838,
+    "Welder": 0.1042,
+    "Packer": 0.1567
+  }
+}
