@@ -54,11 +54,12 @@ This document defines the 4 controlled data defects evaluated in FaultLens, thei
 
 ### Parameters & Mechanics
 - **Severities**: $s \in \{0.0, 0.10, 0.20, 0.30\}$.
-  - When $s > 0$, machine clocks are assigned fixed systematic offsets:
+  - Systematic machine clock offset:
     $$\Delta t_m \sim \text{Uniform}(-15.0 \times (s / 0.30), +15.0 \times (s / 0.30)) \text{ minutes}$$
-  - In addition, an affected fraction $s$ of events experiences stochastic communication jitter:
-    $$\delta t_{ij} \sim \mathcal{N}(0, \sigma^2), \quad \sigma = 2.5 \text{ min}$$
-- **Impact on Diagnosis**: Shifts sequence ordering, causes physically impossible overlapping stops on the same machine, and distorts shift-boundary downtime allocation.
+  - Independent start and end communication jitter on affected fraction $s$:
+    $$\delta t_{\text{start}} \sim \mathcal{N}(0, \sigma^2), \quad \delta t_{\text{end}} \sim \mathcal{N}(0, \sigma^2), \quad \sigma = \max(2.5, 14.0 \times (s / 0.30)) \text{ min}$$
+  - **Durations & Inversions**: Because $\delta t_{\text{start}}$ and $\delta t_{\text{end}}$ are independent, event durations $\Delta t = \text{end\_ts} - \text{start\_ts}$ fluctuate widely; a fraction of records experience timestamp inversion ($\Delta t \le 0$).
+- **Impact on Diagnosis**: Shared diagnoser strictly filters out non-positive durations ($\Delta t \le 0$) and sums distorted positive intervals. This degrades true cause tallies and causes diagnostic accuracy to fall progressively as severity increases.
 
 ---
 
