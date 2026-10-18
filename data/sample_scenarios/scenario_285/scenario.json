@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_285",
+  "seed": 937887,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 453.61,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 405.05,
+  "margin": 0.1071,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Welder",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "electrical_fault"
+    ],
+    "total_stops": 239,
+    "total_downtime_hours": 61.96,
+    "micro_stops_count": 32
+  },
+  "num_events": 239
+}

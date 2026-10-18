@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_175",
+  "seed": 462414,
+  "truth": [
+    "Press",
+    "jam"
+  ],
+  "truth_downtime": 326.69,
+  "runner_up": [
+    "Packer",
+    "jam"
+  ],
+  "runner_up_downtime": 312.31,
+  "margin": 0.044,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "material_shortage"
+    ],
+    "total_stops": 250,
+    "total_downtime_hours": 60.07,
+    "micro_stops_count": 30
+  },
+  "num_events": 250
+}

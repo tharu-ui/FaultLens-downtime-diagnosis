@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_236",
+  "seed": 663634,
+  "truth": [
+    "Press",
+    "jam"
+  ],
+  "truth_downtime": 317.78,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 260.07,
+  "margin": 0.1816,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "jam"
+    ],
+    "competitor_target": [
+      "Packer",
+      "electrical_fault"
+    ],
+    "total_stops": 227,
+    "total_downtime_hours": 50.78,
+    "micro_stops_count": 29
+  },
+  "num_events": 227
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_201",
+  "seed": 908671,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 451.32,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 440.24,
+  "margin": 0.0246,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Welder",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "jam"
+    ],
+    "total_stops": 222,
+    "total_downtime_hours": 59.9,
+    "micro_stops_count": 19
+  },
+  "num_events": 222
+}

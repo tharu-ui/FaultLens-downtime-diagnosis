@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_143",
+  "seed": 409119,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 561.72,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 464.59999999999997,
+  "margin": 0.1729,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "total_stops": 257,
+    "total_downtime_hours": 59.0,
+    "micro_stops_count": 35
+  },
+  "num_events": 257
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_038",
+  "seed": 277482,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 716.97,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 412.6,
+  "margin": 0.4245,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Press",
+      "sensor_fault"
+    ],
+    "total_stops": 246,
+    "total_downtime_hours": 59.3,
+    "micro_stops_count": 28
+  },
+  "num_events": 246
+}

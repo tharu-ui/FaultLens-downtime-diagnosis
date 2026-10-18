@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_117",
+  "seed": 140657,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 289.45000000000005,
+  "runner_up": [
+    "Welder",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 241.51,
+  "margin": 0.1656,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Packer",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Welder",
+      "tool_wear"
+    ],
+    "total_stops": 206,
+    "total_downtime_hours": 47.14,
+    "micro_stops_count": 27
+  },
+  "num_events": 206
+}

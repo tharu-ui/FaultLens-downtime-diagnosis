@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_050",
+  "seed": 760138,
+  "truth": [
+    "Welder",
+    "overheating"
+  ],
+  "truth_downtime": 556.84,
+  "runner_up": [
+    "Packer",
+    "jam"
+  ],
+  "runner_up_downtime": 300.95,
+  "margin": 0.4595,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Welder",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Loader",
+      "material_shortage"
+    ],
+    "total_stops": 227,
+    "total_downtime_hours": 50.71,
+    "micro_stops_count": 35
+  },
+  "num_events": 227
+}

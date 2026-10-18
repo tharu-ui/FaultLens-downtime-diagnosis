@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_113",
+  "seed": 459456,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 688.01,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 402.31,
+  "margin": 0.4153,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "material_shortage"
+    ],
+    "competitor_target": [
+      "Loader",
+      "material_shortage"
+    ],
+    "total_stops": 247,
+    "total_downtime_hours": 57.52,
+    "micro_stops_count": 30
+  },
+  "num_events": 247
+}

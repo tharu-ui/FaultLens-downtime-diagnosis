@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_277",
+  "seed": 782951,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 491.13,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 464.18,
+  "margin": 0.0549,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "total_stops": 246,
+    "total_downtime_hours": 56.94,
+    "micro_stops_count": 18
+  },
+  "num_events": 246
+}

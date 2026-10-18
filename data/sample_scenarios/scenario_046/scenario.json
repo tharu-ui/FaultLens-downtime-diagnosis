@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_046",
+  "seed": 446241,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 495.38,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 327.92,
+  "margin": 0.338,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Welder",
+      "sensor_fault"
+    ],
+    "total_stops": 232,
+    "total_downtime_hours": 51.6,
+    "micro_stops_count": 23
+  },
+  "num_events": 232
+}

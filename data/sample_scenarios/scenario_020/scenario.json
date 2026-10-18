@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_020",
+  "seed": 500851,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 265.5,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 256.4,
+  "margin": 0.0343,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "total_stops": 244,
+    "total_downtime_hours": 55.69,
+    "micro_stops_count": 36
+  },
+  "num_events": 244
+}

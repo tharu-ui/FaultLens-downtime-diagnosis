@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_121",
+  "seed": 668733,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 475.84000000000003,
+  "runner_up": [
+    "Welder",
+    "overheating"
+  ],
+  "runner_up_downtime": 327.27,
+  "margin": 0.3122,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Press",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Loader",
+      "overheating"
+    ],
+    "total_stops": 261,
+    "total_downtime_hours": 62.72,
+    "micro_stops_count": 35
+  },
+  "num_events": 261
+}

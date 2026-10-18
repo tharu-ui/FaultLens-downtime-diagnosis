@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_242",
+  "seed": 95599,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 462.56,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 241.79999999999998,
+  "margin": 0.4773,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "material_shortage"
+    ],
+    "competitor_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "total_stops": 238,
+    "total_downtime_hours": 53.74,
+    "micro_stops_count": 30
+  },
+  "num_events": 238
+}

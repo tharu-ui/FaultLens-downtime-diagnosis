@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_265",
+  "seed": 581479,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 551.08,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 441.34,
+  "margin": 0.1991,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Press",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "jam"
+    ],
+    "total_stops": 250,
+    "total_downtime_hours": 57.39,
+    "micro_stops_count": 24
+  },
+  "num_events": 250
+}

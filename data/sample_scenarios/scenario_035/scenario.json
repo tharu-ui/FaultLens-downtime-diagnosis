@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_035",
+  "seed": 64753,
+  "truth": [
+    "Packer",
+    "sensor_fault"
+  ],
+  "truth_downtime": 495.24,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 406.32,
+  "margin": 0.1795,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "total_stops": 253,
+    "total_downtime_hours": 59.9,
+    "micro_stops_count": 31
+  },
+  "num_events": 253
+}

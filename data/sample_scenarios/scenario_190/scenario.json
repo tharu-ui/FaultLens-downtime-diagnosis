@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_190",
+  "seed": 684016,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 435.21,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 381.40999999999997,
+  "margin": 0.1236,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "total_stops": 256,
+    "total_downtime_hours": 61.07,
+    "micro_stops_count": 35
+  },
+  "num_events": 256
+}

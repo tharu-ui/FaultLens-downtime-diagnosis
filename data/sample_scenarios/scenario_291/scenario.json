@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_291",
+  "seed": 267708,
+  "truth": [
+    "Packer",
+    "jam"
+  ],
+  "truth_downtime": 486.05,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 376.42,
+  "margin": 0.2256,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "material_shortage"
+    ],
+    "total_stops": 238,
+    "total_downtime_hours": 59.15,
+    "micro_stops_count": 22
+  },
+  "num_events": 238
+}

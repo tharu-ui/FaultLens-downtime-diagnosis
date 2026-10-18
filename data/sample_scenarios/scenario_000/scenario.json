@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_000",
+  "seed": 90161,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 356.38,
+  "runner_up": [
+    "Packer",
+    "jam"
+  ],
+  "runner_up_downtime": 310.84999999999997,
+  "margin": 0.1278,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Packer",
+      "material_shortage"
+    ],
+    "total_stops": 246,
+    "total_downtime_hours": 57.09,
+    "micro_stops_count": 24
+  },
+  "num_events": 246
+}

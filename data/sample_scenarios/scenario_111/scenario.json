@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_111",
+  "seed": 780947,
+  "truth": [
+    "Welder",
+    "overheating"
+  ],
+  "truth_downtime": 339.25,
+  "runner_up": [
+    "Press",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 301.94,
+  "margin": 0.11,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Press",
+      "electrical_fault"
+    ],
+    "total_stops": 239,
+    "total_downtime_hours": 56.5,
+    "micro_stops_count": 20
+  },
+  "num_events": 239
+}

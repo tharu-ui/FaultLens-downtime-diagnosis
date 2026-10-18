@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_112",
+  "seed": 556090,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 548.03,
+  "runner_up": [
+    "Packer",
+    "jam"
+  ],
+  "runner_up_downtime": 436.34000000000003,
+  "margin": 0.2038,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "total_stops": 224,
+    "total_downtime_hours": 57.18,
+    "micro_stops_count": 27
+  },
+  "num_events": 224
+}

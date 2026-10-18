@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_078",
+  "seed": 564934,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 346.55,
+  "runner_up": [
+    "Press",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 339.84,
+  "margin": 0.0194,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "material_shortage"
+    ],
+    "competitor_target": [
+      "Welder",
+      "tool_wear"
+    ],
+    "total_stops": 244,
+    "total_downtime_hours": 54.15,
+    "micro_stops_count": 35
+  },
+  "num_events": 244
+}

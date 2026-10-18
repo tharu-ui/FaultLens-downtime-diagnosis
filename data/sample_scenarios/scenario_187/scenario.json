@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_187",
+  "seed": 381639,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 320.31,
+  "runner_up": [
+    "Press",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 296.63,
+  "margin": 0.0739,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "electrical_fault"
+    ],
+    "total_stops": 248,
+    "total_downtime_hours": 52.35,
+    "micro_stops_count": 44
+  },
+  "num_events": 248
+}

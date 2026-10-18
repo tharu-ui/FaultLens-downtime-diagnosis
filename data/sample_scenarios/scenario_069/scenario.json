@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_069",
+  "seed": 470085,
+  "truth": [
+    "Welder",
+    "overheating"
+  ],
+  "truth_downtime": 449.12,
+  "runner_up": [
+    "Press",
+    "jam"
+  ],
+  "runner_up_downtime": 372.28,
+  "margin": 0.1711,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Press",
+      "electrical_fault"
+    ],
+    "total_stops": 241,
+    "total_downtime_hours": 61.47,
+    "micro_stops_count": 26
+  },
+  "num_events": 241
+}

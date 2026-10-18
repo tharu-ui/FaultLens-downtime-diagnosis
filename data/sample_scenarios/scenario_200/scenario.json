@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_200",
+  "seed": 366896,
+  "truth": [
+    "Welder",
+    "tool_wear"
+  ],
+  "truth_downtime": 350.47,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 256.11,
+  "margin": 0.2692,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Welder",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Packer",
+      "tool_wear"
+    ],
+    "total_stops": 244,
+    "total_downtime_hours": 50.34,
+    "micro_stops_count": 28
+  },
+  "num_events": 244
+}

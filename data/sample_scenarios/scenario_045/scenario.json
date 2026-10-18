@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_045",
+  "seed": 970726,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 343.57,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 270.16,
+  "margin": 0.2137,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "material_shortage"
+    ],
+    "total_stops": 272,
+    "total_downtime_hours": 61.12,
+    "micro_stops_count": 29
+  },
+  "num_events": 272
+}

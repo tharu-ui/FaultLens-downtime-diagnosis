@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_108",
+  "seed": 472095,
+  "truth": [
+    "Loader",
+    "material_shortage"
+  ],
+  "truth_downtime": 348.54,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 326.75,
+  "margin": 0.0625,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Packer",
+      "overheating"
+    ],
+    "total_stops": 226,
+    "total_downtime_hours": 51.27,
+    "micro_stops_count": 23
+  },
+  "num_events": 226
+}

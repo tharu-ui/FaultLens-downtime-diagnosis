@@ -1,0 +1,48 @@
+# FaultLens Experiment Configuration
+# Fixed design: 300 scenarios, 40/20/40 train/val/test split
+# 3 methods ONLY, 4 defects ONLY, 4 severities
+
+experiment:
+  name: "faultlens_eval_v1"
+  master_seed: 42
+  num_scenarios: 300
+  splits:
+    train_frac: 0.40
+    val_frac: 0.20
+    test_frac: 0.40
+
+methods:
+  - frequency_baseline
+  - confidence_threshold
+  - faultlens
+
+defects:
+  - missing_events
+  - incorrect_reason_codes
+  - timestamp_errors
+  - duplicate_records
+
+severities:
+  - 0.0
+  - 0.10
+  - 0.20
+  - 0.30
+
+diagnoser:
+  temperature: 1.0
+  calibration:
+    method: "isotonic"  # "isotonic" or "platt"
+    n_bins: 10
+    clip_min: 0.01
+    clip_max: 0.99
+
+stability:
+  num_perturbations: 200
+  resample_fraction: 0.85
+  jitter_std_min: 1.0
+
+policy:
+  # Tuned strictly on validation set, reported on test set
+  abstention_threshold: 0.65
+  quality_weight: 0.40
+  stability_weight: 0.60

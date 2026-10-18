@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_266",
+  "seed": 447590,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 334.05,
+  "runner_up": [
+    "Loader",
+    "material_shortage"
+  ],
+  "runner_up_downtime": 296.28,
+  "margin": 0.1131,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "jam"
+    ],
+    "total_stops": 248,
+    "total_downtime_hours": 54.16,
+    "micro_stops_count": 30
+  },
+  "num_events": 248
+}

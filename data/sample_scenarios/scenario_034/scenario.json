@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_034",
+  "seed": 888001,
+  "truth": [
+    "Welder",
+    "tool_wear"
+  ],
+  "truth_downtime": 403.15999999999997,
+  "runner_up": [
+    "Welder",
+    "overheating"
+  ],
+  "runner_up_downtime": 275.49,
+  "margin": 0.3167,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Welder",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "total_stops": 228,
+    "total_downtime_hours": 51.03,
+    "micro_stops_count": 29
+  },
+  "num_events": 228
+}

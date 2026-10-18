@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_154",
+  "seed": 434882,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 489.99,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 352.53,
+  "margin": 0.2805,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "total_stops": 239,
+    "total_downtime_hours": 56.57,
+    "micro_stops_count": 23
+  },
+  "num_events": 239
+}

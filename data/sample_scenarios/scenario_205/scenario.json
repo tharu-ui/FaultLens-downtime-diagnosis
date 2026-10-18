@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_205",
+  "seed": 266603,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 574.7,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 330.99,
+  "margin": 0.4241,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "total_stops": 228,
+    "total_downtime_hours": 55.14,
+    "micro_stops_count": 23
+  },
+  "num_events": 228
+}

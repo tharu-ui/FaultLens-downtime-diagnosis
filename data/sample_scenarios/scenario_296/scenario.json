@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_296",
+  "seed": 849927,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 440.2,
+  "runner_up": [
+    "Welder",
+    "overheating"
+  ],
+  "runner_up_downtime": 249.92,
+  "margin": 0.4323,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "overheating"
+    ],
+    "total_stops": 228,
+    "total_downtime_hours": 51.77,
+    "micro_stops_count": 20
+  },
+  "num_events": 228
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_288",
+  "seed": 542701,
+  "truth": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "truth_downtime": 355.4,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 304.01,
+  "margin": 0.1446,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Welder",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "sensor_fault"
+    ],
+    "total_stops": 260,
+    "total_downtime_hours": 63.63,
+    "micro_stops_count": 34
+  },
+  "num_events": 260
+}

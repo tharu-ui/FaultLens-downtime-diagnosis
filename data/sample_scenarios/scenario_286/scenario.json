@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_286",
+  "seed": 161857,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 463.36,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 319.84,
+  "margin": 0.3097,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "competitor_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "total_stops": 261,
+    "total_downtime_hours": 56.36,
+    "micro_stops_count": 32
+  },
+  "num_events": 261
+}

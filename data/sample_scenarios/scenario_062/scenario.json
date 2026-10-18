@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_062",
+  "seed": 367275,
+  "truth": [
+    "Press",
+    "electrical_fault"
+  ],
+  "truth_downtime": 574.3,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 351.7,
+  "margin": 0.3876,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Packer",
+      "jam"
+    ],
+    "competitor_target": [
+      "Loader",
+      "jam"
+    ],
+    "total_stops": 233,
+    "total_downtime_hours": 59.48,
+    "micro_stops_count": 29
+  },
+  "num_events": 233
+}

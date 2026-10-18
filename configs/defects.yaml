@@ -1,0 +1,51 @@
+# FaultLens Defect Injection Configuration
+# 4 Defects ONLY at severities: 0.0, 0.10, 0.20, 0.30
+# Pure and seeded, strictly synthetic logs, never modifies true_cause or scenario.truth.
+
+severities:
+  - 0.0
+  - 0.10
+  - 0.20
+  - 0.30
+
+defects:
+  missing_events:
+    description: "Network drops, logger disconnects, unclosed stop intervals"
+    drop_fraction_of_affected: 0.50
+    null_end_ts_fraction_of_affected: 0.50
+
+  incorrect_reason_codes:
+    description: "Operator miscoding, alarm ambiguity, fallback Other/Unknown"
+    confusion_map:
+      sensor_fault:
+        electrical_fault: 0.60
+        Other/Unknown: 0.40
+      electrical_fault:
+        sensor_fault: 0.65
+        Other/Unknown: 0.35
+      jam:
+        material_shortage: 0.70
+        Other/Unknown: 0.30
+      material_shortage:
+        jam: 0.60
+        Other/Unknown: 0.40
+      overheating:
+        Other/Unknown: 0.70
+        electrical_fault: 0.30
+      tool_wear:
+        jam: 0.45
+        Other/Unknown: 0.55
+
+  timestamp_errors:
+    description: "PLC clock drift, NTP de-sync, transmission jitter causing overlaps"
+    min_offset_min: 1.0
+    max_offset_min: 15.0
+    jitter_std_min: 2.5
+
+  duplicate_records:
+    description: "Retry bursts on network blip, webhook re-delivery, multiple sensor debounces"
+    single_duplicate_fraction: 0.70
+    burst_duplicate_fraction: 0.30
+    burst_min_records: 3
+    burst_max_records: 10
+    burst_spread_seconds: 45.0

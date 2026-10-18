@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_179",
+  "seed": 501543,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 470.09,
+  "runner_up": [
+    "Welder",
+    "overheating"
+  ],
+  "runner_up_downtime": 440.13,
+  "margin": 0.0637,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Welder",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Press",
+      "sensor_fault"
+    ],
+    "total_stops": 242,
+    "total_downtime_hours": 67.69,
+    "micro_stops_count": 27
+  },
+  "num_events": 242
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_176",
+  "seed": 717340,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 471.32,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 417.69,
+  "margin": 0.1138,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Loader",
+      "tool_wear"
+    ],
+    "total_stops": 244,
+    "total_downtime_hours": 53.41,
+    "micro_stops_count": 33
+  },
+  "num_events": 244
+}

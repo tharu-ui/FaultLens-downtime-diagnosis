@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_166",
+  "seed": 321894,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 406.82,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 312.64,
+  "margin": 0.2315,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "competitor_target": [
+      "Packer",
+      "tool_wear"
+    ],
+    "total_stops": 247,
+    "total_downtime_hours": 51.99,
+    "micro_stops_count": 20
+  },
+  "num_events": 247
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_110",
+  "seed": 277844,
+  "truth": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "truth_downtime": 273.02,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 272.64,
+  "margin": 0.0014,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Welder",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "tool_wear"
+    ],
+    "total_stops": 231,
+    "total_downtime_hours": 50.77,
+    "micro_stops_count": 25
+  },
+  "num_events": 231
+}

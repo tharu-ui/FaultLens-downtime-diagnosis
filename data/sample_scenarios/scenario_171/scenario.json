@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_171",
+  "seed": 90957,
+  "truth": [
+    "Packer",
+    "sensor_fault"
+  ],
+  "truth_downtime": 720.03,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 465.78,
+  "margin": 0.3531,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "total_stops": 284,
+    "total_downtime_hours": 70.19,
+    "micro_stops_count": 36
+  },
+  "num_events": 284
+}

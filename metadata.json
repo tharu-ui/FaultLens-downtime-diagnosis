@@ -1,0 +1,6 @@
+{
+  "name": "FaultLens: Evidence-Aware Downtime Diagnosis",
+  "description": "Evidence-aware downtime diagnosis evaluating diagnostic reliability under controlled data defects using synthetic machine-event logs.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

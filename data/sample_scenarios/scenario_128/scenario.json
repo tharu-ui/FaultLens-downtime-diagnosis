@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_128",
+  "seed": 575025,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 479.74,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 477.62,
+  "margin": 0.0044,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Press",
+      "material_shortage"
+    ],
+    "total_stops": 279,
+    "total_downtime_hours": 73.64,
+    "micro_stops_count": 41
+  },
+  "num_events": 279
+}

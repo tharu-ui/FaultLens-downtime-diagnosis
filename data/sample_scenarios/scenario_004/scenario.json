@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_004",
+  "seed": 433581,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 399.91999999999996,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 331.16999999999996,
+  "margin": 0.1719,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Loader",
+      "electrical_fault"
+    ],
+    "total_stops": 223,
+    "total_downtime_hours": 55.79,
+    "micro_stops_count": 30
+  },
+  "num_events": 223
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_168",
+  "seed": 334956,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 668.77,
+  "runner_up": [
+    "Welder",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 306.36,
+  "margin": 0.5419,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Welder",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "total_stops": 252,
+    "total_downtime_hours": 62.78,
+    "micro_stops_count": 32
+  },
+  "num_events": 252
+}

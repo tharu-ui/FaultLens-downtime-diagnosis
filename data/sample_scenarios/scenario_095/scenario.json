@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_095",
+  "seed": 289039,
+  "truth": [
+    "Press",
+    "jam"
+  ],
+  "truth_downtime": 433.40999999999997,
+  "runner_up": [
+    "Loader",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 313.82,
+  "margin": 0.2759,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "jam"
+    ],
+    "competitor_target": [
+      "Packer",
+      "tool_wear"
+    ],
+    "total_stops": 278,
+    "total_downtime_hours": 65.82,
+    "micro_stops_count": 24
+  },
+  "num_events": 278
+}

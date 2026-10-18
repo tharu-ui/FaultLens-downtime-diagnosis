@@ -1,0 +1,31 @@
+{
+  "scenario_id": "scenario_270",
+  "seed": 295457,
+  "truth": [
+    "Loader",
+    "material_shortage"
+  ],
+  "truth_downtime": 492.56,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 332.04,
+  "margin": 0.3259,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Welder",
+      "material_shortage"
+    ],
+    "total_stops": 286,
+    "total_downtime_hours": 67.09,
+    "micro_stops_count": 30
+  },
+  "num_events": 286
+}
