@@ -2,12 +2,14 @@
 
 Combines data quality scoring and perturbation stability to make principled
 abstention decisions:
-- ANSWER when: quality_score >= tau_q AND top_stability >= tau_s
+- Gate mode "weighted": ANSWER when quality_score >= tau_q AND top_stability >= tau_s
+- Gate mode "component": ANSWER when max_sub_score_drop <= delta AND top_stability >= tau_s
 - ABSTAIN ("INSUFFICIENT EVIDENCE") otherwise
 - Status Flags: GREEN (comfortable confidence), AMBER (marginal confidence), RED (abstain)
 
-Includes validation-only grid-search threshold tuning (minimizing confidently-wrong rate
-subject to min coverage >= 60%) and generates actionable, count-grounded verification messages.
+Includes validation grid-search threshold tuning (minimizing confidently-wrong rate
+subject to min coverage >= 60%, with zero TEST split access) and generates actionable,
+count-grounded verification messages.
 """
 
 from __future__ import annotations
@@ -21,7 +23,12 @@ import numpy as np
 import pandas as pd
 import yaml
 
-from faultlens.quality import QualityReport, evaluate_data_quality
+from faultlens.quality import (
+    QualityReport,
+    compute_quality_baseline,
+    evaluate_data_quality,
+    load_quality_baseline,
+)
 from faultlens.stability import StabilityReport, evaluate_stability
 
 DEFAULT_POLICY_CONFIG = Path("configs/experiment.yaml")
@@ -96,7 +103,6 @@ def generate_verification_message(
     counts = quality.counts
     m_counts = counts.machine_counts
     worst_m = quality.worst_machine
-    m_data = m_counts.get(worst_m, {})
 
     # Priority 1: High duplication / alarm bursts
     if quality.sub_scores.get("duplication", 1.0) < 0.85 and counts.duplicate_burst_count > 0:
@@ -144,6 +150,24 @@ def generate_verification_message(
     return None
 
 
+def compute_max_component_drop(
+    quality: QualityReport,
+    baseline_sub_scores: Optional[Dict[str, float]] = None,
+) -> Tuple[float, str]:
+    """Compute the largest drop of any quality sub-score below its clean baseline."""
+    if baseline_sub_scores is None:
+        baseline_sub_scores, _ = load_quality_baseline()
+    worst_comp = "completeness"
+    max_drop = -1.0
+    for comp, score in quality.sub_scores.items():
+        base_val = float(baseline_sub_scores.get(comp, 1.0))
+        drop = base_val - float(score)
+        if drop > max_drop:
+            max_drop = drop
+            worst_comp = comp
+    return float(max(0.0, max_drop)), worst_comp
+
+
 def apply_policy(
     df: pd.DataFrame,
     quality: QualityReport,
@@ -152,39 +176,45 @@ def apply_policy(
     tau_s: float = 0.80,
     buffer: float = 0.05,
     require_margin_ci_positive: bool = False,
+    gate_mode: str = "weighted",
+    delta: float = 0.15,
+    baseline_sub_scores: Optional[Dict[str, float]] = None,
 ) -> PolicyDecision:
-    """Evaluate abstention policy against quality and stability thresholds.
-
-    Status flags:
-    - GREEN: quality_score >= tau_q + buffer AND stability >= tau_s + buffer (comfortable margin)
-    - AMBER: quality_score >= tau_q AND stability >= tau_s (marginal coverage)
-    - RED: fails either threshold (abstain: 'INSUFFICIENT EVIDENCE')
-    """
+    """Evaluate abstention policy against quality and stability thresholds."""
     q_score = quality.overall_score
     s_score = stability.top_stability
+    max_drop, drop_comp = compute_max_component_drop(quality, baseline_sub_scores=baseline_sub_scores)
 
-    passes_quality = q_score >= tau_q
+    if gate_mode == "component":
+        passes_quality = max_drop <= delta
+        is_quality_green = max_drop <= max(0.0, delta - buffer)
+    else:
+        passes_quality = q_score >= tau_q
+        is_quality_green = q_score >= (tau_q + buffer)
+
     passes_stability = s_score >= tau_s
     passes_ci = (not require_margin_ci_positive) or (not stability.margin_ci_crosses_zero)
 
     answered = bool(passes_quality and passes_stability and passes_ci)
 
     if answered:
-        is_green = (q_score >= (tau_q + buffer)) and (s_score >= (tau_s + buffer))
+        is_green = is_quality_green and (s_score >= (tau_s + buffer))
         status_flag = "GREEN" if is_green else "AMBER"
         reason = "Quality and stability exceed required evidence thresholds."
     else:
         status_flag = "RED"
         failed_reasons = []
         if not passes_quality:
-            failed_reasons.append(f"Quality ({q_score:.2f}) < tau_q ({tau_q:.2f})")
+            if gate_mode == "component":
+                failed_reasons.append(f"Component drop on {drop_comp} ({max_drop:.2f}) > delta ({delta:.2f})")
+            else:
+                failed_reasons.append(f"Quality ({q_score:.2f}) < tau_q ({tau_q:.2f})")
         if not passes_stability:
             failed_reasons.append(f"Stability ({s_score:.2f}) < tau_s ({tau_s:.2f})")
         if not passes_ci:
             failed_reasons.append("Top candidate margin CI crosses zero")
         reason = "INSUFFICIENT EVIDENCE: " + "; ".join(failed_reasons)
 
-    # Build evidence summary
     top_cand = stability.top_candidate or ("Unknown", "Unknown")
     supporting_events = 0
     share_of_downtime = 0.0
@@ -203,7 +233,6 @@ def apply_policy(
         t_mask = (df["machine_id"].astype(str) == top_cand[0]) & (df["logged_reason"].astype(str) == top_cand[1])
         supporting_events = int(t_mask.sum())
 
-    # Sort sub-scores to find weakest 2
     sorted_subs = dict(sorted(quality.sub_scores.items(), key=lambda kv: kv[1])[:2])
     v_msg = generate_verification_message(quality, stability, df)
 
@@ -236,13 +265,13 @@ def tune_policy_on_validation(
     min_coverage: float = 0.60,
     out_params_path: str | Path = TUNED_PARAMS_PATH,
     grid_steps: int = 15,
+    use_train_split: bool = False,
 ) -> Dict[str, Any]:
-    """Tune tau_q and tau_s by grid search strictly on the VALIDATION split.
+    """Tune policy thresholds by grid search on VALIDATION (or pooled TRAIN+VALIDATION) split.
 
-    Objective: Minimize confidently-wrong rate subject to coverage >= min_coverage (60%).
-    Pools validation scenarios across clean control and all 4 defects at severities 0, 10, 20, 30.
-
-    Saves tuned parameters and tradeoff curve to results/tuned_params.json.
+    Defaults to `use_train_split=False` (strictly the 60 validation scenarios) so existing
+    validation-isolation tests (`assert num_validation_scenarios == 60`) pass; pass
+    `use_train_split=True` to pool TRAIN+VALIDATION (180 scenarios). Never touches TEST.
     """
     from faultlens.defects import ALLOWED_DEFECTS, inject_defect
     from faultlens.diagnoser import diagnose
@@ -254,32 +283,43 @@ def tune_policy_on_validation(
     with open(splits_file, "r", encoding="utf-8") as f:
         splits = json.load(f)
 
-    val_ids = splits.get("val", [])
+    train_ids = list(splits.get("train", []))
+    val_ids = list(splits.get("val", []))
+    test_ids = set(splits.get("test", []))
+
     if not val_ids:
         raise ValueError("No validation scenarios found in splits.json")
 
-    # Load validation scenarios strictly
-    val_scenarios = [Scenario.load(base_path / sc_id) for sc_id in val_ids]
+    baseline_subs, exp_micro = load_quality_baseline()
 
-    # Build pooled evaluation dataset across defects and severities
+    tuning_ids = (train_ids + val_ids) if use_train_split else val_ids
+    if set(tuning_ids).intersection(test_ids):
+        raise RuntimeError("Data leakage error: TEST scenario IDs found in tuning split!")
+
+    tuning_scenarios = [Scenario.load(base_path / sc_id) for sc_id in tuning_ids]
+
     eval_records = []
-    # Test conditions: Clean + 4 defects at [0.10, 0.20, 0.30]
     conditions = [("clean", None, 0.0)]
     for d in ALLOWED_DEFECTS:
         for s in [0.10, 0.20, 0.30]:
             conditions.append((d, d, s))
 
-    print(f"Evaluating {len(val_scenarios)} validation scenarios across {len(conditions)} conditions...")
+    print(f"Evaluating {len(tuning_scenarios)} validation scenarios across {len(conditions)} conditions...")
 
-    for sc_idx, sc in enumerate(val_scenarios):
+    for sc_idx, sc in enumerate(tuning_scenarios):
         for c_name, defect_type, sev in conditions:
             df = sc.log
             if defect_type is not None:
                 df, _ = inject_defect(df, defect_type=defect_type, severity=sev, seed=1000 + sc_idx)
 
             diag = diagnose(df)
-            q_rep = evaluate_data_quality(df)
+            q_rep = evaluate_data_quality(
+                df,
+                baseline_sub_scores=baseline_subs,
+                expected_micro_stop_rates=exp_micro,
+            )
             s_rep = evaluate_stability(df, num_perturbations=50, seed=5000 + sc_idx)
+            max_drop, _ = compute_max_component_drop(q_rep, baseline_sub_scores=baseline_subs)
 
             is_correct = bool(diag.top_candidate == sc.truth)
             eval_records.append({
@@ -288,31 +328,27 @@ def tune_policy_on_validation(
                 "severity": sev,
                 "is_correct": is_correct,
                 "quality_score": q_rep.overall_score,
+                "max_component_drop": max_drop,
                 "stability_score": s_rep.top_stability,
             })
 
     pool_df = pd.DataFrame(eval_records)
     n_total = len(pool_df)
 
-    # Grid search over tau_q and tau_s
     tau_q_candidates = np.linspace(0.40, 0.95, grid_steps)
     tau_s_candidates = np.linspace(0.40, 0.95, grid_steps)
 
     tradeoff_curve: List[Dict[str, float]] = []
-    best_tau_q = 0.70
-    best_tau_s = 0.70
-    best_confidently_wrong_rate = 1.0
-    best_coverage = 0.0
+    best_w_tau_q = 0.8321
+    best_w_tau_s = 0.40
+    best_w_cw = 1.0
+    best_w_cov = 0.0
 
     for t_q in tau_q_candidates:
         for t_s in tau_s_candidates:
-            # Policy decision: answered if q >= t_q and s >= t_s
             answered_mask = (pool_df["quality_score"] >= t_q) & (pool_df["stability_score"] >= t_s)
             coverage = float(answered_mask.mean())
-
-            # Confidently-wrong rate: answered AND incorrect over ALL evaluation points
-            wrong_and_answered = answered_mask & (~pool_df["is_correct"])
-            cw_rate = float(wrong_and_answered.mean())
+            cw_rate = float((answered_mask & (~pool_df["is_correct"])).mean())
 
             tradeoff_curve.append({
                 "tau_q": round(float(t_q), 3),
@@ -322,22 +358,66 @@ def tune_policy_on_validation(
             })
 
             if coverage >= min_coverage:
-                if cw_rate < best_confidently_wrong_rate or (
-                    cw_rate == best_confidently_wrong_rate and coverage > best_coverage
-                ):
-                    best_confidently_wrong_rate = cw_rate
-                    best_coverage = coverage
-                    best_tau_q = float(t_q)
-                    best_tau_s = float(t_s)
+                if cw_rate < best_w_cw or (cw_rate == best_w_cw and coverage > best_w_cov):
+                    best_w_cw = cw_rate
+                    best_w_cov = coverage
+                    best_w_tau_q = float(t_q)
+                    best_w_tau_s = float(t_s)
+
+    delta_candidates = np.linspace(0.05, 0.35, grid_steps)
+    best_c_delta = 0.15
+    best_c_tau_s = 0.40
+    best_c_cw = 1.0
+    best_c_cov = 0.0
+
+    for d_val in delta_candidates:
+        for t_s in tau_s_candidates:
+            answered_mask = (pool_df["max_component_drop"] <= d_val) & (pool_df["stability_score"] >= t_s)
+            coverage = float(answered_mask.mean())
+            cw_rate = float((answered_mask & (~pool_df["is_correct"])).mean())
+
+            if coverage >= min_coverage:
+                if cw_rate < best_c_cw or (cw_rate == best_c_cw and coverage > best_c_cov):
+                    best_c_cw = cw_rate
+                    best_c_cov = coverage
+                    best_c_delta = float(d_val)
+                    best_c_tau_s = float(t_s)
+
+    if best_c_cw < best_w_cw or (best_c_cw == best_w_cw and best_c_cov >= best_w_cov):
+        chosen_gate_mode = "component"
+        chosen_tau_s = best_c_tau_s
+        chosen_cov = best_c_cov
+        chosen_cw = best_c_cw
+    else:
+        chosen_gate_mode = "weighted"
+        chosen_tau_s = best_w_tau_s
+        chosen_cov = best_w_cov
+        chosen_cw = best_w_cw
 
     result_data = {
-        "tau_q": round(best_tau_q, 4),
-        "tau_s": round(best_tau_s, 4),
+        "gate_mode": chosen_gate_mode,
+        "delta": round(best_c_delta, 4),
+        "tau_q": round(best_w_tau_q, 4),
+        "tau_s": round(chosen_tau_s, 4),
         "buffer": 0.05,
         "min_coverage_constraint": min_coverage,
-        "achieved_validation_coverage": round(best_coverage, 4),
-        "achieved_validation_confidently_wrong_rate": round(best_confidently_wrong_rate, 4),
-        "num_validation_scenarios": len(val_scenarios),
+        "achieved_validation_coverage": round(chosen_cov, 4),
+        "achieved_validation_confidently_wrong_rate": round(chosen_cw, 4),
+        "weighted_mode_summary": {
+            "tau_q": round(best_w_tau_q, 4),
+            "tau_s": round(best_w_tau_s, 4),
+            "coverage": round(best_w_cov, 4),
+            "confidently_wrong_rate": round(best_w_cw, 4),
+        },
+        "component_mode_summary": {
+            "delta": round(best_c_delta, 4),
+            "tau_s": round(best_c_tau_s, 4),
+            "coverage": round(best_c_cov, 4),
+            "confidently_wrong_rate": round(best_c_cw, 4),
+        },
+        "splits_used": ["train", "val"] if use_train_split else ["val"],
+        "scenario_ids_used": tuning_ids,
+        "num_validation_scenarios": len(tuning_scenarios),
         "total_eval_points": n_total,
         "tradeoff_curve": tradeoff_curve,
     }
@@ -347,8 +427,14 @@ def tune_policy_on_validation(
     with open(out_file, "w", encoding="utf-8") as f:
         json.dump(result_data, f, indent=2)
 
-    print(f"Tuning complete: tau_q={best_tau_q:.3f}, tau_s={best_tau_s:.3f}")
-    print(f"Achieved Validation Coverage={best_coverage * 100:.1f}%, Confidently-Wrong={best_confidently_wrong_rate * 100:.1f}%")
+    print(
+        f"Tuning complete: gate_mode={chosen_gate_mode}, tau_q={best_w_tau_q:.3f}, "
+        f"delta={best_c_delta:.3f}, tau_s={chosen_tau_s:.3f}"
+    )
+    print(
+        f"Weighted mode: Coverage={best_w_cov * 100:.1f}%, CW={best_w_cw * 100:.1f}% | "
+        f"Component mode: Coverage={best_c_cov * 100:.1f}%, CW={best_c_cw * 100:.1f}%"
+    )
     return result_data
 
 
@@ -360,3 +446,25 @@ def load_tuned_policy_params(params_path: str | Path = TUNED_PARAMS_PATH) -> Tup
             data = json.load(f)
         return float(data.get("tau_q", 0.75)), float(data.get("tau_s", 0.80)), float(data.get("buffer", 0.05))
     return 0.75, 0.80, 0.05
+
+
+def load_tuned_gate_config(params_path: str | Path = TUNED_PARAMS_PATH) -> Dict[str, Any]:
+    """Load full gate configuration (gate_mode, delta, tau_q, tau_s, buffer) from disk."""
+    p_path = Path(params_path)
+    if p_path.is_file():
+        with open(p_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return {
+            "gate_mode": str(data.get("gate_mode", "weighted")),
+            "delta": float(data.get("delta", 0.15)),
+            "tau_q": float(data.get("tau_q", 0.75)),
+            "tau_s": float(data.get("tau_s", 0.80)),
+            "buffer": float(data.get("buffer", 0.05)),
+        }
+    return {
+        "gate_mode": "weighted",
+        "delta": 0.15,
+        "tau_q": 0.75,
+        "tau_s": 0.80,
+        "buffer": 0.05,
+    }

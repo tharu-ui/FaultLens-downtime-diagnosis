@@ -53,4 +53,15 @@ This document records all domain, mathematical, and implementation assumptions m
      where $T = 1.0$ is the softmax temperature.
      - When $S_1 = S_2$ (ambiguous dead heat), $z = 0 \implies \text{raw\_confidence} = 0.50$.
      - When $S_1$ decisively dominates all runner-up causes ($z \gg 1$), $\text{raw\_confidence} \to 1.0$.
-3. **Calibration Assumption**: Raw confidence reflects heuristic margin separation, which tends to be overconfident under clean data and poorly calibrated under defects. Calibration maps raw confidence $c \in [0.5, 1.0] \to \hat{p} \in [0, 1]$ using Isotonic Regression (non-parametric monotonic binning) fit strictly on the validation set. ECE (Expected Calibration Error) is evaluated using 10 equal-width bins.
+3. **Calibration Assumption (Platt vs. Isotonic)**: Raw confidence reflects heuristic margin separation, which tends to be overconfident under clean data and poorly calibrated under defects. Because Isotonic Regression creates piecewise-constant step plateaus (flattening distinct raw confidence scores into a small number of tied values and preventing fine-grained coverage matching), Platt scaling (logistic sigmoid regression) is used for continuous, strictly monotonic probability calibration fit strictly on validation data. ECE (Expected Calibration Error) is evaluated using 10 equal-width bins.
+
+## 5. Data Quality Baseline & Component-Aware Gate Assumptions
+
+1. **Orthogonal Sub-Scores**: Near-duplicate rows are identified first and excluded from the interval overlap check so `duplicate_records` lowers `duplication` without artificially penalizing `timestamp_consistency`. Similarly, `Other/Unknown` rows are excluded from `alarm_reason_agreement` so they are not double-penalized alongside `reason_validity`.
+2. **Empirical Clean Baseline**: Expected per-machine micro-stop rates and baseline sub-scores are derived from the 120 `train` clean scenarios (`results/quality_baseline.json`), and `worst_component` is defined as the sub-score with the largest drop below its clean baseline.
+3. **Component-Aware vs. Weighted Gate**: Because a weighted average across 6 sub-scores dilutes severe single-dimension defects (e.g., 30% duplicates lowering only a 0.15-weighted component), `policy.py` compares `weighted` (`quality_score >= tau_q`) against `component` (`max_sub_score_drop <= delta`) alongside `top_stability >= tau_s`.
+
+## 6. Tuning Split & Test Isolation Assumptions
+
+1. **Pooled Train+Validation Tuning**: Policy thresholds ($\le 3$ parameters: `delta` or `tau_q`, `tau_s`, and `gate_mode`) are tuned on the pooled `train` (120) + `val` (60) splits (180 scenarios) to reduce finite-sample tuning variance while keeping the 120 `test` scenarios 100% untouched for the final Session 3 benchmark run.
+2. **Factorial Severity 0.0 Representation**: In `raw_results.csv` (5,760 rows = 120 test scenarios $\times$ 4 defects $\times$ 4 severities $\times$ 3 methods), severity `0.0` is included under each of the 4 defect labels to maintain a balanced $4 \times 4$ factorial grid; at `0.0` severity no defect is injected, so the clean evaluation is identical across the 4 defect labels.

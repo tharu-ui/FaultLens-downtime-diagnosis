@@ -81,18 +81,7 @@ def evaluate_stability(
     drop_rate_range: Tuple[float, float] = (0.05, 0.10),
     jitter_std_min: float = 1.0,
 ) -> StabilityReport:
-    """Execute vectorized perturbation-based diagnostic stability testing.
-
-    Args:
-        df: Input log DataFrame.
-        num_perturbations: Number of bootstrap/perturbation iterations (default 200).
-        seed: Random seed guaranteeing repeatability.
-        drop_rate_range: Min and max event dropout fraction per perturbation.
-        jitter_std_min: Standard deviation (minutes) of duration Gaussian jitter.
-
-    Returns:
-        StabilityReport containing top stability, flip rate, and 95% CIs.
-    """
+    """Execute vectorized perturbation-based diagnostic stability testing."""
     if df.empty:
         return StabilityReport(
             top_stability=0.0,
@@ -106,7 +95,6 @@ def evaluate_stability(
             runner_up_candidate=None,
         )
 
-    # Filter out unclosed / non-positive records
     valid_mask = df["end_ts"].notna()
     if "duration_min" in df.columns:
         valid_mask = valid_mask & df["duration_min"].notna() & (df["duration_min"] > 0)
@@ -135,7 +123,6 @@ def evaluate_stability(
         ends = pd.to_datetime(valid_df["end_ts"])
         valid_df["duration_min"] = (ends - starts).dt.total_seconds() / 60.0
 
-    # Build discrete candidate mappings
     pairs = list(zip(valid_df["machine_id"].astype(str), valid_df["logged_reason"].astype(str)))
     unique_candidates = sorted(list(set(pairs)))
     cand_to_id = {c: i for i, c in enumerate(unique_candidates)}
@@ -146,7 +133,6 @@ def evaluate_stability(
     durations = valid_df["duration_min"].to_numpy(dtype=np.float64)
     m_events = len(durations)
 
-    # Baseline original unperturbed ranking
     base_sums = np.bincount(cand_indices, weights=durations, minlength=k_candidates)
     base_order = np.argsort(-base_sums)
     orig_top_id = int(base_order[0])
@@ -179,7 +165,6 @@ def evaluate_stability(
 
     rng = np.random.default_rng(seed)
 
-    # Simulation buffers
     top_matches = 0
     top3_flips = 0
     all_shares = np.zeros((num_perturbations, k_candidates), dtype=np.float64)
@@ -187,21 +172,16 @@ def evaluate_stability(
     top_chosen_counts = np.zeros(k_candidates, dtype=np.int32)
 
     for b in range(num_perturbations):
-        # 1. Random event dropout fraction (5% to 10%)
         drop_rate = rng.uniform(drop_rate_range[0], drop_rate_range[1])
         keep_size = max(5, int(round(m_events * (1.0 - drop_rate))))
-
-        # 2. Bootstrap resample of kept events
         sample_indices = rng.choice(m_events, size=keep_size, replace=True)
 
-        # 3. Additive Gaussian duration jitter
         sampled_cands = cand_indices[sample_indices]
         sampled_durs = durations[sample_indices].copy()
         if jitter_std_min > 0:
             jitter = rng.normal(0.0, jitter_std_min, size=keep_size)
             sampled_durs = np.clip(sampled_durs + jitter, 0.1, None)
 
-        # High-speed bincount summation
         b_sums = np.bincount(sampled_cands, weights=sampled_durs, minlength=k_candidates)
         b_total = b_sums.sum()
         if b_total <= 0:
@@ -210,10 +190,8 @@ def evaluate_stability(
         b_shares = b_sums / b_total
         all_shares[b, :] = b_shares
 
-        # Rank candidates
         b_order = np.argsort(-b_sums)
         b_top_id = int(b_order[0])
-        b_second_id = int(b_order[1])
 
         top_chosen_counts[b_top_id] += 1
 
@@ -224,7 +202,6 @@ def evaluate_stability(
         if b_top3 != orig_top3_tuple:
             top3_flips += 1
 
-        # Share difference between the specific top candidate and runner up
         margin_diffs[b] = b_shares[orig_top_id] - b_shares[orig_runner_up_id]
 
     top_stability = float(top_matches / num_perturbations)
@@ -234,7 +211,6 @@ def evaluate_stability(
     margin_ci_upper = float(np.percentile(margin_diffs, 97.5))
     margin_ci_crosses_zero = bool(margin_ci_lower <= 0.0)
 
-    # Compile candidate CIs sorted by baseline downtime
     candidate_cis: List[CandidateCI] = []
     for cand_idx in base_order:
         cand_idx = int(cand_idx)

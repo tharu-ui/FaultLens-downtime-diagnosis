@@ -19,7 +19,12 @@ import numpy as np
 import pandas as pd
 
 from faultlens.diagnoser import ConfidenceCalibrator, DiagnosisResult, diagnose
-from faultlens.policy import PolicyDecision, apply_policy, load_tuned_policy_params
+from faultlens.policy import (
+    PolicyDecision,
+    apply_policy,
+    load_tuned_gate_config,
+    load_tuned_policy_params,
+)
 from faultlens.quality import QualityReport, evaluate_data_quality
 from faultlens.stability import StabilityReport, evaluate_stability
 
@@ -88,6 +93,8 @@ class ConfidenceThresholdMethod:
     """Method 2: Confidence-threshold baseline.
 
     Answers only if post-hoc calibrated probability >= threshold.
+    Uses Platt scaling by default when fitting calibration so predicted probabilities
+    are strictly monotonic in raw margin confidence (avoiding isotonic step plateaus).
     """
 
     def __init__(
@@ -100,16 +107,18 @@ class ConfidenceThresholdMethod:
         self.calibrator = calibrator
         self.threshold = threshold
         self.buffer = buffer
+        self._reference_confs: Optional[np.ndarray] = None
 
     def fit_calibrator(
         self,
         raw_confs: np.ndarray | List[float],
         labels: np.ndarray | List[int],
-        method: str = "isotonic",
+        method: str = "platt",
     ) -> "ConfidenceThresholdMethod":
         """Fit calibration model on validation set."""
         self.calibrator = ConfidenceCalibrator(method=method)
         self.calibrator.fit(raw_confs, labels)
+        self._reference_confs = self.calibrator.predict_batch(raw_confs)
         return self
 
     def find_threshold_for_coverage(
@@ -119,13 +128,33 @@ class ConfidenceThresholdMethod:
     ) -> float:
         """Select confidence threshold yielding target coverage on validation set."""
         arr = np.asarray(calibrated_confs, dtype=float)
+        self._reference_confs = arr
         if len(arr) == 0:
             return 0.50
+        if target_coverage <= 0.0:
+            tuned_t = float(np.max(arr) + 1e-6)
+            self.threshold = tuned_t
+            return tuned_t
+        if target_coverage >= 1.0:
+            tuned_t = float(np.min(arr) - 1e-6)
+            self.threshold = tuned_t
+            return tuned_t
         # Percentile corresponding to (1 - target_coverage)
         pct = max(0.0, min(100.0, (1.0 - target_coverage) * 100.0))
         tuned_t = float(np.percentile(arr, pct))
         self.threshold = tuned_t
         return tuned_t
+
+    def threshold_for_target_coverage(
+        self,
+        target: float,
+        calibrated_confs: Optional[np.ndarray | List[float]] = None,
+    ) -> float:
+        """Thin wrapper around find_threshold_for_coverage for target coverage matching."""
+        ref = calibrated_confs if calibrated_confs is not None else self._reference_confs
+        if ref is None:
+            raise ValueError("Provide calibrated_confs or call fit_calibrator/find_threshold_for_coverage first.")
+        return self.find_threshold_for_coverage(ref, target_coverage=target)
 
     def predict(self, df: pd.DataFrame) -> MethodOutput:
         """Run shared diagnoser and abstain if calibrated confidence < threshold."""
@@ -177,13 +206,18 @@ class FaultLensMethod:
         buffer: float = 0.05,
         num_perturbations: int = 100,
         require_margin_ci_positive: bool = False,
+        gate_mode: Optional[str] = None,
+        delta: Optional[float] = None,
     ) -> None:
         self.method_name = "faultlens"
         self.calibrator = calibrator
         loaded_tq, loaded_ts, loaded_buf = load_tuned_policy_params()
+        gate_cfg = load_tuned_gate_config()
         self.tau_q = tau_q if tau_q is not None else loaded_tq
         self.tau_s = tau_s if tau_s is not None else loaded_ts
         self.buffer = buffer if buffer is not None else loaded_buf
+        self.gate_mode = gate_mode if gate_mode is not None else gate_cfg["gate_mode"]
+        self.delta = delta if delta is not None else gate_cfg["delta"]
         self.num_perturbations = num_perturbations
         self.require_margin_ci_positive = require_margin_ci_positive
 
@@ -208,6 +242,8 @@ class FaultLensMethod:
             tau_s=self.tau_s,
             buffer=self.buffer,
             require_margin_ci_positive=self.require_margin_ci_positive,
+            gate_mode=self.gate_mode,
+            delta=self.delta,
         )
 
         return MethodOutput(

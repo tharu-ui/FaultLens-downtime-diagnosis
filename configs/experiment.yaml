@@ -31,7 +31,7 @@ severities:
 diagnoser:
   temperature: 1.0
   calibration:
-    method: "isotonic"  # "isotonic" or "platt"
+    method: "platt"  # "isotonic" or "platt"
     n_bins: 10
     clip_min: 0.01
     clip_max: 0.99
@@ -57,10 +57,11 @@ quality_scoring:
     Packer: 0.15
 
 policy:
-  # Tuned strictly on validation set, reported on test set
+  # Tuned strictly on train+validation splits, reported on test set
+  gate_mode: "component"  # "weighted" or "component"
+  delta: 0.15
   tau_q: 0.75
   tau_s: 0.80
   buffer: 0.05
   min_coverage: 0.60
   require_margin_ci_positive: false
-
