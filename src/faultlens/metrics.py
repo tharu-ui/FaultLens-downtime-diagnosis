@@ -3,12 +3,53 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
 
 from faultlens.diagnoser import compute_ece
+
+DEFECT_TO_COMPONENTS: Dict[str, Tuple[str, ...]] = {
+    "missing_events": ("completeness",),
+    "incorrect_reason_codes": ("reason_validity", "alarm_reason_agreement"),
+    "timestamp_errors": ("timestamp_consistency",),
+    "duplicate_records": ("duplication",),
+}
+
+
+def is_defect_attributed(
+    defect_type: Optional[str],
+    worst_component: Optional[str],
+) -> Optional[bool]:
+    """Check whether quality report's worst_component matches the injected defect type.
+
+    Mapping (Task 4):
+    - missing_events -> completeness
+    - incorrect_reason_codes -> reason_validity or alarm_reason_agreement
+    - timestamp_errors -> timestamp_consistency
+    - duplicate_records -> duplication
+    """
+    if defect_type is None or defect_type in ("clean", "none", ""):
+        return None
+    expected = DEFECT_TO_COMPONENTS.get(str(defect_type))
+    if expected is None or worst_component is None:
+        return False
+    return str(worst_component) in expected
+
+
+def compute_attribution_accuracy(
+    defect_type: Optional[str],
+    worst_components: Sequence[Optional[str]],
+    has_attribution: bool = True,
+) -> Union[float, str]:
+    """Compute attribution accuracy for a defect slice, or 'N/A' if not applicable."""
+    if not has_attribution or defect_type is None or defect_type in ("clean", "none", ""):
+        return "N/A"
+    if len(worst_components) == 0:
+        return 0.0
+    matches = [bool(is_defect_attributed(defect_type, wc)) for wc in worst_components]
+    return round(float(np.mean(matches)), 4)
 
 
 @dataclass

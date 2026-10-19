@@ -20,6 +20,80 @@ import yaml
 
 DEFAULT_CONFIG_PATH = Path("configs/generator.yaml")
 
+DEFAULT_GENERATOR_CONFIG_DICT: Dict[str, Any] = {
+    "simulation": {
+        "duration_days": 30,
+        "shifts_per_day": 3,
+        "shift_hours": 8,
+    },
+    "causes": [
+        "jam",
+        "sensor_fault",
+        "overheating",
+        "material_shortage",
+        "tool_wear",
+        "electrical_fault",
+    ],
+    "machines": {
+        "Loader": {
+            "base_mtbf_hours": 10.5,
+            "duration_distribution": {"mean_min": 14.0, "sigma": 0.80, "micro_stop_prob": 0.12},
+            "cause_propensities": {
+                "jam": 0.35,
+                "material_shortage": 0.28,
+                "sensor_fault": 0.15,
+                "electrical_fault": 0.10,
+                "tool_wear": 0.07,
+                "overheating": 0.05,
+            },
+        },
+        "Press": {
+            "base_mtbf_hours": 13.0,
+            "duration_distribution": {"mean_min": 22.0, "sigma": 0.90, "micro_stop_prob": 0.08},
+            "cause_propensities": {
+                "overheating": 0.32,
+                "tool_wear": 0.28,
+                "electrical_fault": 0.16,
+                "sensor_fault": 0.12,
+                "jam": 0.08,
+                "material_shortage": 0.04,
+            },
+        },
+        "Welder": {
+            "base_mtbf_hours": 11.5,
+            "duration_distribution": {"mean_min": 18.0, "sigma": 0.85, "micro_stop_prob": 0.10},
+            "cause_propensities": {
+                "electrical_fault": 0.34,
+                "sensor_fault": 0.26,
+                "overheating": 0.18,
+                "tool_wear": 0.12,
+                "jam": 0.06,
+                "material_shortage": 0.04,
+            },
+        },
+        "Packer": {
+            "base_mtbf_hours": 9.5,
+            "duration_distribution": {"mean_min": 12.0, "sigma": 0.75, "micro_stop_prob": 0.15},
+            "cause_propensities": {
+                "jam": 0.38,
+                "sensor_fault": 0.22,
+                "material_shortage": 0.20,
+                "tool_wear": 0.10,
+                "electrical_fault": 0.06,
+                "overheating": 0.04,
+            },
+        },
+    },
+    "alarm_mapping": {
+        "sensor_fault": {"primary": "SENSOR_ALARM", "secondary": ["CALIBRATION_ERR", "COMM_TIMEOUT"]},
+        "electrical_fault": {"primary": "SENSOR_ALARM", "secondary": ["POWER_SURGE", "VOLTAGE_DROP"]},
+        "overheating": {"primary": "THERMAL_HIGH", "secondary": ["TEMP_WARNING", "COOLANT_LOW"]},
+        "jam": {"primary": "FEED_BLOCK", "secondary": ["TRACK_OBSTRUCTION", "MOTOR_OVERLOAD"]},
+        "tool_wear": {"primary": "WEAR_LIMIT", "secondary": ["TORQUE_EXCEEDED", "VIBRATION_WARN"]},
+        "material_shortage": {"primary": "HOPPER_LOW", "secondary": ["FEED_EMPTY", "BUFFER_STARVE"]},
+    },
+}
+
 
 @dataclass
 class Scenario:
@@ -97,12 +171,36 @@ class Scenario:
 
 
 def load_generator_config(config_path: str | Path = DEFAULT_CONFIG_PATH) -> Dict[str, Any]:
-    """Load the YAML configuration for synthetic log generation."""
+    """Load the YAML configuration for synthetic log generation, ensuring full machine schemas."""
     path = Path(config_path)
-    if not path.is_file():
+    loaded: Dict[str, Any] = {}
+    if path.is_file():
+        with open(path, "r", encoding="utf-8") as f:
+            raw = yaml.safe_load(f)
+            if isinstance(raw, dict):
+                loaded = raw
+    elif path != DEFAULT_CONFIG_PATH:
         raise FileNotFoundError(f"Generator config not found at: {path.resolve()}")
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+
+    merged = dict(DEFAULT_GENERATOR_CONFIG_DICT)
+    if isinstance(loaded.get("simulation"), dict):
+        merged["simulation"] = {**DEFAULT_GENERATOR_CONFIG_DICT["simulation"], **loaded["simulation"]}
+    elif isinstance(loaded.get("generator"), dict) and "horizon_days" in loaded["generator"]:
+        merged["simulation"] = {
+            **DEFAULT_GENERATOR_CONFIG_DICT["simulation"],
+            "duration_days": int(loaded["generator"]["horizon_days"]),
+        }
+
+    if isinstance(loaded.get("causes"), list) and loaded["causes"]:
+        merged["causes"] = list(loaded["causes"])
+
+    if isinstance(loaded.get("machines"), dict) and loaded["machines"]:
+        merged["machines"] = loaded["machines"]
+
+    if isinstance(loaded.get("alarm_mapping"), dict) and loaded["alarm_mapping"]:
+        merged["alarm_mapping"] = loaded["alarm_mapping"]
+
+    return merged
 
 
 def _get_shift(dt: datetime) -> str:
@@ -141,17 +239,18 @@ def generate_scenario(
 
     rng = np.random.default_rng(seed)
 
-    sim_cfg = config.get("simulation", {})
+    sim_cfg = config.get("simulation", DEFAULT_GENERATOR_CONFIG_DICT["simulation"])
     duration_days = sim_cfg.get("duration_days", 30)
     start_base = datetime(2026, 1, 1, 0, 0, 0)
     horizon_seconds = duration_days * 24 * 3600
     end_horizon = start_base + timedelta(seconds=horizon_seconds)
 
     machines_cfg = config.get("machines", {})
-    alarm_mapping = config.get("alarm_mapping", {})
-    all_causes = config.get("causes", [
-        "jam", "sensor_fault", "overheating", "material_shortage", "tool_wear", "electrical_fault"
-    ])
+    if not isinstance(machines_cfg, dict) or not machines_cfg:
+        machines_cfg = DEFAULT_GENERATOR_CONFIG_DICT["machines"]
+
+    alarm_mapping = config.get("alarm_mapping", DEFAULT_GENERATOR_CONFIG_DICT["alarm_mapping"])
+    all_causes = config.get("causes", DEFAULT_GENERATOR_CONFIG_DICT["causes"])
 
     # Select difficulty profile if not explicitly specified
     if target_difficulty is None:
@@ -413,6 +512,80 @@ def generate_benchmark_scenarios(
             json.dump(splits, f, indent=2)
 
     return scenarios, splits
+
+
+def generate_extra_train_scenarios(
+    num_scenarios: int = 120,
+    master_seed: int = 1337,
+    out_dir: str | Path = "data/sample_scenarios/extra_train",
+    config: Optional[Dict[str, Any]] = None,
+) -> Tuple[List[Scenario], Dict[str, Any]]:
+    """Generate extra synthetic TRAIN scenarios with a new seed, saved separately from splits.json."""
+    if config is None:
+        config = load_generator_config()
+
+    rng = np.random.default_rng(master_seed)
+    scenario_seeds = rng.integers(low=1000000, high=1999999, size=num_scenarios)
+
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    scenarios: List[Scenario] = []
+    for idx, s_seed in enumerate(scenario_seeds):
+        sc_id = f"extra_train_{idx:03d}"
+        sc = generate_scenario(seed=int(s_seed), scenario_id=sc_id, config=config)
+        sc.save(out_path)
+        scenarios.append(sc)
+
+    manifest = {
+        "split": "extra_train",
+        "synthetic_disclosure": "100% synthetic machine-event logs generated with master_seed=1337.",
+        "master_seed": master_seed,
+        "num_scenarios": len(scenarios),
+        "scenario_ids": [s.scenario_id for s in scenarios],
+    }
+    manifest_file = out_path / "extra_train_manifest.json"
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    return scenarios, manifest
+
+
+def generate_fresh_test_scenarios(
+    num_scenarios: int = 200,
+    master_seed: int = 4242,
+    out_dir: str | Path = "data/sample_scenarios/fresh_test",
+    config: Optional[Dict[str, Any]] = None,
+) -> Tuple[List[Scenario], Dict[str, Any]]:
+    """Generate 200 fresh held-out synthetic scenarios with seed 4242 and its own manifest (do not evaluate)."""
+    if config is None:
+        config = load_generator_config()
+
+    rng = np.random.default_rng(master_seed)
+    scenario_seeds = rng.integers(low=2000000, high=2999999, size=num_scenarios)
+
+    out_path = Path(out_dir)
+    out_path.mkdir(parents=True, exist_ok=True)
+
+    scenarios: List[Scenario] = []
+    for idx, s_seed in enumerate(scenario_seeds):
+        sc_id = f"fresh_test_{idx:03d}"
+        sc = generate_scenario(seed=int(s_seed), scenario_id=sc_id, config=config)
+        sc.save(out_path)
+        scenarios.append(sc)
+
+    manifest = {
+        "split": "fresh_test",
+        "synthetic_disclosure": "100% synthetic held-out scenarios generated with master_seed=4242.",
+        "master_seed": master_seed,
+        "num_scenarios": len(scenarios),
+        "scenario_ids": [s.scenario_id for s in scenarios],
+    }
+    manifest_file = out_path / "manifest.json"
+    with open(manifest_file, "w", encoding="utf-8") as f:
+        json.dump(manifest, f, indent=2)
+
+    return scenarios, manifest
 
 
 if __name__ == "__main__":

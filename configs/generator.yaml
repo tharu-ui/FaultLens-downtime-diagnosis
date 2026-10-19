@@ -1,88 +1,24 @@
-# FaultLens Synthetic Log Generator Configuration
-# Synthetic data only - Ground truth downtime simulation
+# FaultLens Synthetic Plant Generator Configuration
 
 simulation:
   duration_days: 30
-  hours_per_day: 24
-  shifts:
-    - name: "Shift_1"
-      start_hour: 6
-      end_hour: 14
-    - name: "Shift_2"
-      start_hour: 14
-      end_hour: 22
-    - name: "Shift_3"
-      start_hour: 22
-      end_hour: 6
-  num_scenarios: 300
-  master_seed: 42
-  split_ratio:
-    train: 0.40
-    val: 0.20
-    test: 0.40
-  micro_stop_threshold_min: 1.0
-  manual_stop_threshold_min: 1.5
+  shifts_per_day: 3
+  shift_hours: 8
 
-machines:
-  Loader:
-    base_mtbf_hours: 12.0
-    cause_propensities:
-      jam: 0.35
-      material_shortage: 0.30
-      sensor_fault: 0.15
-      electrical_fault: 0.08
-      tool_wear: 0.04
-      overheating: 0.08
-    duration_distribution:
-      type: "lognormal"
-      mean_min: 14.0
-      sigma: 0.85
-      micro_stop_prob: 0.12
-
-  Press:
-    base_mtbf_hours: 14.0
-    cause_propensities:
-      tool_wear: 0.35
-      overheating: 0.25
-      jam: 0.15
-      sensor_fault: 0.12
-      electrical_fault: 0.08
-      material_shortage: 0.05
-    duration_distribution:
-      type: "lognormal"
-      mean_min: 22.0
-      sigma: 0.95
-      micro_stop_prob: 0.08
-
-  Welder:
-    base_mtbf_hours: 10.0
-    cause_propensities:
-      electrical_fault: 0.30
-      overheating: 0.25
-      sensor_fault: 0.22
-      tool_wear: 0.12
-      jam: 0.06
-      material_shortage: 0.05
-    duration_distribution:
-      type: "lognormal"
-      mean_min: 16.0
-      sigma: 0.90
-      micro_stop_prob: 0.10
-
-  Packer:
-    base_mtbf_hours: 11.0
-    cause_propensities:
-      jam: 0.38
-      sensor_fault: 0.24
-      material_shortage: 0.20
-      electrical_fault: 0.08
-      tool_wear: 0.05
-      overheating: 0.05
-    duration_distribution:
-      type: "lognormal"
-      mean_min: 12.0
-      sigma: 0.80
-      micro_stop_prob: 0.15
+generator:
+  horizon_days: 30
+  machines:
+    - Loader
+    - Press
+    - Welder
+    - Packer
+  causes:
+    - jam
+    - sensor_fault
+    - overheating
+    - material_shortage
+    - tool_wear
+    - electrical_fault
 
 causes:
   - jam
@@ -92,8 +28,60 @@ causes:
   - tool_wear
   - electrical_fault
 
-# Alarm codes are symptoms, not perfect 1:1 causes.
-# sensor_fault and electrical_fault can both trigger SENSOR_ALARM.
+machines:
+  Loader:
+    base_mtbf_hours: 10.5
+    duration_distribution:
+      mean_min: 14.0
+      sigma: 0.80
+      micro_stop_prob: 0.12
+    cause_propensities:
+      jam: 0.35
+      material_shortage: 0.28
+      sensor_fault: 0.15
+      electrical_fault: 0.10
+      tool_wear: 0.07
+      overheating: 0.05
+  Press:
+    base_mtbf_hours: 13.0
+    duration_distribution:
+      mean_min: 22.0
+      sigma: 0.90
+      micro_stop_prob: 0.08
+    cause_propensities:
+      overheating: 0.32
+      tool_wear: 0.28
+      electrical_fault: 0.16
+      sensor_fault: 0.12
+      jam: 0.08
+      material_shortage: 0.04
+  Welder:
+    base_mtbf_hours: 11.5
+    duration_distribution:
+      mean_min: 18.0
+      sigma: 0.85
+      micro_stop_prob: 0.10
+    cause_propensities:
+      electrical_fault: 0.34
+      sensor_fault: 0.26
+      overheating: 0.18
+      tool_wear: 0.12
+      jam: 0.06
+      material_shortage: 0.04
+  Packer:
+    base_mtbf_hours: 9.5
+    duration_distribution:
+      mean_min: 12.0
+      sigma: 0.75
+      micro_stop_prob: 0.15
+    cause_propensities:
+      jam: 0.38
+      sensor_fault: 0.22
+      material_shortage: 0.20
+      tool_wear: 0.10
+      electrical_fault: 0.06
+      overheating: 0.04
+
 alarm_mapping:
   sensor_fault:
     primary: "SENSOR_ALARM"
@@ -113,7 +101,3 @@ alarm_mapping:
   material_shortage:
     primary: "HOPPER_LOW"
     secondary: ["FEED_EMPTY", "BUFFER_STARVE"]
-
-margin_control:
-  target_easy_margin_min: 0.18
-  target_close_margin_max: 0.07

@@ -68,22 +68,7 @@ def compute_raw_confidence(
     temperature: float = 1.0,
     epsilon: float = 1e-6,
 ) -> float:
-    """Compute margin-based softmax raw confidence.
-
-    Formula:
-        Given candidate downtime sums S_1 >= S_2 >= ... >= S_k:
-        - If k == 1: confidence = 1.0
-        - If k >= 2:
-            margin = S_1 - S_2
-            rest_scores = scores[1:]
-            mean_rest = float(np.mean(rest_scores)) if len(rest_scores) > 0 else 0.0
-            scale = max(mean_rest, epsilon)
-            z = margin / scale
-            raw_confidence = 1 / (1 + exp(-z / temperature))
-        This yields a smooth confidence in [0.5, 1.0]:
-        - 0.50 when S_1 == S_2 (dead heat / ambiguous)
-        - Approaches 1.0 when S_1 decisively dominates the remaining candidates.
-    """
+    """Compute margin-based softmax raw confidence."""
     if len(scores) <= 1 or top_score <= 0:
         return 1.0
 
@@ -109,19 +94,7 @@ def diagnose(
     temperature: float = 1.0,
     calibrator: Optional["ConfidenceCalibrator"] = None,
 ) -> DiagnosisResult:
-    """Execute shared diagnosis on machine event logs.
-
-    Filters unclosed stops (null end_ts), sums valid downtime minutes
-    grouped by (machine_id, logged_reason), and computes ranked candidates.
-
-    Args:
-        df: Input event DataFrame.
-        temperature: Softmax temperature parameter (default 1.0).
-        calibrator: Optional fitted ConfidenceCalibrator instance.
-
-    Returns:
-        DiagnosisResult containing ranked candidates and confidence scores.
-    """
+    """Execute shared diagnosis on machine event logs."""
     if df.empty:
         return DiagnosisResult(
             top_candidate=None,
@@ -138,7 +111,6 @@ def diagnose(
             events_skipped=0,
         )
 
-    # Filter out unclosed stops (missing end_ts or non-positive durations)
     valid_mask = df["end_ts"].notna()
     if "duration_min" in df.columns:
         valid_mask = valid_mask & df["duration_min"].notna() & (df["duration_min"] > 0)
@@ -164,13 +136,11 @@ def diagnose(
             events_skipped=events_skipped,
         )
 
-    # Compute duration_min if not explicitly present or null
     if "duration_min" not in valid_df.columns or valid_df["duration_min"].isna().any():
         valid_df["start_dt"] = pd.to_datetime(valid_df["start_ts"])
         valid_df["end_dt"] = pd.to_datetime(valid_df["end_ts"])
         valid_df["duration_min"] = (valid_df["end_dt"] - valid_df["start_dt"]).dt.total_seconds() / 60.0
 
-    # Group by (machine_id, logged_reason) and sum downtime
     grouped = (
         valid_df.groupby(["machine_id", "logged_reason"])["duration_min"]
         .sum()
@@ -238,12 +208,7 @@ class ConfidenceCalibrator:
         self.is_fitted: bool = False
 
     def fit(self, confidences: np.ndarray | List[float], labels: np.ndarray | List[int]) -> "ConfidenceCalibrator":
-        """Fit calibration model on validation set.
-
-        Args:
-            confidences: Array of raw confidence scores in [0.5, 1.0].
-            labels: Binary indicators (1 if top candidate is ground-truth correct, 0 otherwise).
-        """
+        """Fit calibration model on validation set."""
         x = np.asarray(confidences, dtype=float)
         y = np.asarray(labels, dtype=float)
 
@@ -251,11 +216,9 @@ class ConfidenceCalibrator:
             raise ValueError("Cannot fit calibrator on empty dataset.")
 
         if self.method == "isotonic":
-            # Isotonic non-parametric monotonic regression
             self.model = IsotonicRegression(out_of_bounds="clip", y_min=0.01, y_max=0.99)
             self.model.fit(x, y)
         else:
-            # Platt scaling (logistic sigmoid)
             self.model = LogisticRegression(C=1.0, solver="lbfgs")
             self.model.fit(x.reshape(-1, 1), y.astype(int))
 
@@ -291,16 +254,7 @@ def compute_ece(
     labels: np.ndarray | List[int],
     n_bins: int = 10,
 ) -> Tuple[float, Dict[str, Any]]:
-    """Compute Expected Calibration Error (ECE) and reliability diagram bin metrics.
-
-    Args:
-        confidences: Predicted confidence / probability array.
-        labels: Ground truth binary accuracy labels (1 or 0).
-        n_bins: Number of equal-width probability bins (default 10).
-
-    Returns:
-        Tuple of (ece_value, reliability_diagram_data_dict).
-    """
+    """Compute Expected Calibration Error (ECE) and reliability diagram bin metrics."""
     conf = np.asarray(confidences, dtype=float)
     acc = np.asarray(labels, dtype=float)
     n = len(conf)
@@ -351,18 +305,7 @@ def run_sanity_check(
     num_eval: int = 60,
     seed: int = 42,
 ) -> pd.DataFrame:
-    """Run a quick sanity check evaluating diagnoser accuracy on clean data and 30% defects.
-
-    Evaluates across validation/test scenarios:
-    1. Clean (0% noise)
-    2. Missing events (30% severity)
-    3. Incorrect reason codes (30% severity)
-    4. Timestamp errors (30% severity)
-    5. Duplicate records (30% severity)
-
-    Returns:
-        DataFrame summarizing sample count, top-1 accuracy, mean confidence, and error count.
-    """
+    """Run a quick sanity check evaluating diagnoser accuracy on clean data and 30% defects."""
     import json
     from pathlib import Path
     from faultlens.defects import ALLOWED_DEFECTS, inject_defect
@@ -376,10 +319,9 @@ def run_sanity_check(
             splits = json.load(f)
         scenario_ids = splits.get("val", [])[:num_eval]
     else:
-        scenario_ids = [d.name for d in base_dir.iterdir() if d.is_dir()][:num_eval]
+        scenario_ids = [d.name for d in base_dir.iterdir() if d.is_dir()][:num_eval] if base_dir.is_dir() else []
 
     if not scenario_ids:
-        # Fallback to generating scenarios on the fly
         from faultlens.generator import generate_scenario
         scenarios = [generate_scenario(seed=1000 + i) for i in range(num_eval)]
     else:
@@ -426,17 +368,3 @@ def run_sanity_check(
 
     summary_df = pd.DataFrame(results_table)
     return summary_df
-
-
-if __name__ == "__main__":
-    import sys
-
-    print("======================================================================")
-    print("FaultLens Session 1 Sanity Check: Baseline Diagnoser Accuracy")
-    print("Evaluating Clean Data vs. 4 Controlled Defects at 30% Severity")
-    print("======================================================================")
-    table = run_sanity_check(num_eval=60)
-    print("\n" + table.to_string(index=False) + "\n")
-    print("======================================================================")
-    print("Sanity Check Complete.")
-    print("======================================================================")

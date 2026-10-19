@@ -79,17 +79,14 @@ def inject_missing_events(
     n_affected = max(1, min(n_affected, n_total))
 
     affected_indices = rng.choice(corrupted.index.to_numpy(), size=n_affected, replace=False)
-    # 50% dropped, 50% unclosed (null end_ts)
     n_drop = int(round(n_affected * 0.50))
     drop_indices = affected_indices[:n_drop]
     null_indices = affected_indices[n_drop:]
 
-    # Null end_ts and duration_min for unclosed records
     if len(null_indices) > 0:
         corrupted.loc[null_indices, "end_ts"] = pd.NaT
         corrupted.loc[null_indices, "duration_min"] = np.nan
 
-    # Drop rows
     if len(drop_indices) > 0:
         corrupted = corrupted.drop(index=drop_indices).reset_index(drop=True)
 
@@ -122,7 +119,7 @@ def inject_incorrect_reason_codes(
     n_total = len(df)
 
     if config is None:
-        cfg_dict = load_defects_config()
+        cfg_dict = load_defects_config() if DEFAULT_DEFECTS_CONFIG.is_file() else {}
     else:
         cfg_dict = config
 
@@ -188,15 +185,7 @@ def inject_timestamp_errors(
     seed: int,
     config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Inject timestamp drift per machine and independent communication jitter.
-
-    Applies per-machine clock offset plus independent Gaussian jitter on start_ts and end_ts,
-    causing erroneous durations, negative durations, out-of-order records, and same-machine overlaps.
-    The shared diagnoser skips non-positive durations, degrading effective candidate evidence.
-
-    Industrial grounding: Unsynchronized PLC clocks, asynchronous telemetry buffering, and transmission latency.
-    CRITICAL: Preserves true_cause and scenario.truth.
-    """
+    """Inject timestamp drift per machine and independent communication jitter."""
     severity = _validate_severity(severity)
     corrupted = df.copy(deep=True)
     n_total = len(df)
@@ -216,13 +205,11 @@ def inject_timestamp_errors(
 
     rng = np.random.default_rng(seed)
 
-    # Convert to clean datetime64[ns] Series to prevent pandas 3 / 2.x dtype assignment warnings
     starts = pd.to_datetime(corrupted["start_ts"]).copy()
     ends = pd.to_datetime(corrupted["end_ts"]).copy()
 
-    # 1. Machine-level clock drift
     machines = list(corrupted["machine_id"].unique())
-    scale_factor = severity / 0.30  # At 30% severity, full 15 min drift
+    scale_factor = severity / 0.30
     machine_offsets: Dict[str, float] = {}
 
     for m in machines:
@@ -234,12 +221,10 @@ def inject_timestamp_errors(
         valid_end_mask = m_mask & ends.notna().to_numpy()
         ends.loc[valid_end_mask] = ends.loc[valid_end_mask] + offset_delta
 
-    # 2. Independent event-level jitter on start_ts and end_ts for affected fraction
     n_jitter = int(round(n_total * severity))
     n_jitter = max(1, min(n_jitter, n_total))
     jitter_indices = rng.choice(corrupted.index.to_numpy(), size=n_jitter, replace=False)
 
-    # Jitter standard deviation scales with severity (up to 14 minutes at 30% severity)
     jitter_std = max(2.5, 14.0 * scale_factor)
     start_jitters = rng.normal(loc=0.0, scale=jitter_std, size=len(jitter_indices))
     end_jitters = rng.normal(loc=0.0, scale=jitter_std, size=len(jitter_indices))
@@ -249,11 +234,9 @@ def inject_timestamp_errors(
         if pd.notna(ends.at[idx]):
             ends.at[idx] = ends.at[idx] + pd.to_timedelta(end_jitters[i], unit="m")
 
-    # Assign entire columns whole to avoid partial dtype assignment
     corrupted["start_ts"] = starts
     corrupted["end_ts"] = ends
 
-    # Recompute durations: independent jitter distorts durations and creates negative durations
     dur_series = (ends - starts).dt.total_seconds() / 60.0
     corrupted["duration_min"] = dur_series.round(2)
 
@@ -279,10 +262,7 @@ def inject_duplicate_records(
     seed: int,
     config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Inject duplicate records: exact row clones and rapid micro-bursts from sensor bounce.
-
-    Industrial grounding: MQTT at-least-once delivery retries and contact switch bounce.
-    """
+    """Inject duplicate records: exact row clones and rapid micro-bursts from sensor bounce."""
     severity = _validate_severity(severity)
     corrupted = df.copy(deep=True)
     n_total = len(df)
@@ -304,20 +284,17 @@ def inject_duplicate_records(
     n_affected = max(1, min(n_affected, n_total))
 
     target_indices = rng.choice(corrupted.index.to_numpy(), size=n_affected, replace=False)
-    # 70% single duplicates, 30% burst duplicates
     n_single = int(round(n_affected * 0.70))
     single_indices = target_indices[:n_single]
     burst_indices = target_indices[n_single:]
 
     new_rows: List[Dict[str, Any]] = []
 
-    # Single duplicates
     for s_idx in single_indices:
         row = corrupted.loc[s_idx].to_dict()
         row["event_id"] = f"{row['event_id']}_dup"
         new_rows.append(row)
 
-    # Burst duplicates (3 to 10 records clustered within 45s)
     burst_total_added = 0
     for b_idx in burst_indices:
         base_row = corrupted.loc[b_idx].to_dict()
@@ -325,7 +302,6 @@ def inject_duplicate_records(
         for b_sub in range(1, k_burst + 1):
             b_row = dict(base_row)
             b_row["event_id"] = f"{base_row['event_id']}_burst{b_sub}"
-            # Small jitter within 45 seconds
             sec_jitter = float(rng.uniform(-20.0, 45.0))
             if pd.notna(b_row["start_ts"]):
                 b_row["start_ts"] = b_row["start_ts"] + timedelta(seconds=sec_jitter)
@@ -358,18 +334,7 @@ def inject_defect(
     seed: int,
     config: Optional[Dict[str, Any]] = None,
 ) -> Tuple[pd.DataFrame, Dict[str, Any]]:
-    """Unified entry point for injecting one of the 4 controlled defects.
-
-    Args:
-        df: Clean input DataFrame.
-        defect_type: One of 'missing_events', 'incorrect_reason_codes', 'timestamp_errors', 'duplicate_records'.
-        severity: Float in [0.0, 0.30].
-        seed: Random seed for repeatability.
-        config: Optional configuration dictionary.
-
-    Returns:
-        (corrupted_df, defect_report).
-    """
+    """Unified entry point for injecting one of the 4 controlled defects."""
     if defect_type == "missing_events":
         return inject_missing_events(df, severity, seed, config)
     elif defect_type == "incorrect_reason_codes":

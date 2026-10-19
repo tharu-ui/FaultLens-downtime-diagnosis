@@ -1,5 +1,3 @@
-"""Unit tests for perturbation stability testing."""
-
 import time
 import pytest
 from faultlens.generator import generate_scenario

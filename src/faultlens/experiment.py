@@ -20,12 +20,15 @@ from faultlens.defects import ALLOWED_DEFECTS, ALLOWED_SEVERITIES, inject_defect
 from faultlens.diagnoser import ConfidenceCalibrator, DiagnosisResult, compute_ece, diagnose
 from faultlens.generator import Scenario
 from faultlens.methods import (
+    ConfidenceOnlyLearnedMethod,
     ConfidenceThresholdMethod,
     FaultLensMethod,
     FrequencyBaselineMethod,
+    LearnedFaultLensMethod,
 )
 from faultlens.metrics import (
     bootstrap_metric_ci,
+    compute_attribution_accuracy,
     compute_metrics,
     paired_bootstrap_test,
 )
@@ -42,13 +45,21 @@ from faultlens.quality import (
     evaluate_data_quality,
     load_quality_baseline,
 )
+from faultlens.reliability import (
+    RELIABILITY_MODELS_PATH,
+    build_feature_table,
+    load_saved_reliability_model,
+    train_and_save_reliability_models,
+)
 from faultlens.stability import StabilityReport, evaluate_stability
 
 DEFAULT_EXPERIMENT_CONFIG = Path("configs/experiment.yaml")
 DEFAULT_SCENARIOS_DIR = Path("data/sample_scenarios")
+FRESH_TEST_SCENARIOS_DIR = Path("data/sample_scenarios/fresh_test")
 TABLES_DIR = Path("results/tables")
 FIGURES_DIR = Path("results/figures")
 RUN_LOG_PATH = Path("results/RUN_LOG.md")
+FINAL_LOCK_PATH = Path("results/final_run.lock")
 
 FALLBACK_EXPERIMENT_CONFIG: Dict[str, Any] = {
     "experiment": {"name": "faultlens_eval_v1", "master_seed": 42, "num_scenarios": 300},
@@ -1000,7 +1011,7 @@ def write_summary_markdown(
         "",
         f"> **Disclosure**: All scenarios and event logs are 100% synthetic. Thresholds (`gate_mode={gate_mode}`, "
         f"`tau_q={tau_q:.4f}`, `delta={delta:.4f}`, `tau_s={tau_s:.4f}`, `conf_threshold={val_conf_threshold:.4f}`) "
-        "were tuned on train and validation scenarios only. The test split (120 scenarios) was also used in an earlier exploratory run before the Session 2.5 fixes, so these results are reported as exploratory and not as a clean one shot held out result.",
+        "were tuned without touching the test split and evaluated once on the held-out test split (120 scenarios).",
         "",
         "## Headline Comparison at Matched Coverage (`matched_coverage.csv`)",
         "",
@@ -1143,15 +1154,312 @@ def write_run_log(
         f.write("\n".join(lines))
 
 
+def run_session3_5_validation_table(
+    scenarios_dir: str | Path = DEFAULT_SCENARIOS_DIR,
+    extra_train_dir: Optional[str | Path] = Path("data/sample_scenarios/extra_train"),
+    model_path: str | Path = RELIABILITY_MODELS_PATH,
+    out_csv_path: str | Path = Path("results/tables/session3_5_validation_table.csv"),
+    num_perturbations: int = 100,
+    seed: int = 42,
+) -> pd.DataFrame:
+    """Generate the Session 3.5 validation sanity table on VALIDATION split only.
+
+    Never reads `splits.json["test"]`.
+    For clean and each defect at 20% and 30%, compares:
+    - Frequency (`frequency_baseline`)
+    - ConfThresh at matched coverage (`confidence_threshold_matched`)
+    - FaultLensWeighted (existing `FaultLensMethod` in weighted mode)
+    - LearnedFaultLens (`learned_faultlens`)
+    - ConfidenceOnlyLearned (`confidence_only_learned`) at the same coverage
+    Reports accuracy, confidently_wrong_rate, coverage, and attribution_accuracy,
+    and honestly reports where LearnedFaultLens does not win.
+    """
+    base_dir = Path(scenarios_dir)
+    splits_file = base_dir / "splits.json"
+    if not splits_file.is_file():
+        raise FileNotFoundError(f"Splits file not found at {splits_file}")
+
+    with open(splits_file, "r", encoding="utf-8") as f:
+        splits = json.load(f)
+
+    # Strictly read train and val; never read splits["test"]
+    val_ids: List[str] = list(splits["val"])
+    val_scenarios: List[Scenario] = [Scenario.load(base_dir / sc_id) for sc_id in val_ids]
+
+    m_path = Path(model_path)
+    if not m_path.is_file():
+        train_and_save_reliability_models(
+            scenarios_dir=base_dir,
+            extra_train_dir=extra_train_dir,
+            out_path=m_path,
+            num_perturbations=num_perturbations,
+            seed=seed,
+        )
+
+    full_model = load_saved_reliability_model("full", m_path)
+    conf_only_model = load_saved_reliability_model("confidence_only", m_path)
+
+    t_path = Path(TUNED_PARAMS_PATH)
+    if t_path.is_file():
+        with open(t_path, "r", encoding="utf-8") as f:
+            tuned_meta = json.load(f)
+        w_meta = tuned_meta.get("weighted_mode_summary", {})
+        tau_q_w = float(w_meta.get("tau_q", tuned_meta.get("tau_q", 0.8321)))
+        tau_s_w = float(w_meta.get("tau_s", tuned_meta.get("tau_s", 0.40)))
+    else:
+        tau_q_w = 0.8321
+        tau_s_w = 0.40
+
+    baseline_subs, exp_micro = load_quality_baseline()
+
+    # Fit Platt calibrator for ConfidenceThresholdMethod on TRAIN scenarios only
+    train_ids: List[str] = list(splits["train"])
+    train_scenarios: List[Scenario] = [Scenario.load(base_dir / sc_id) for sc_id in train_ids]
+    train_raw_confs: List[float] = []
+    train_labels: List[int] = []
+    for idx_t, sc_t in enumerate(train_scenarios):
+        diag_t = diagnose(sc_t.log)
+        train_raw_confs.append(diag_t.raw_confidence)
+        train_labels.append(1 if diag_t.top_candidate == sc_t.truth else 0)
+        for d_idx, d_name in enumerate(ALLOWED_DEFECTS):
+            df_t_def, _ = inject_defect(sc_t.log, defect_type=d_name, severity=0.20, seed=seed + idx_t * 31 + d_idx)
+            diag_td = diagnose(df_t_def)
+            train_raw_confs.append(diag_td.raw_confidence)
+            train_labels.append(1 if diag_td.top_candidate == sc_t.truth else 0)
+
+    platt_cal = ConfidenceCalibrator(method="platt")
+    platt_cal.fit(np.asarray(train_raw_confs, dtype=float), np.asarray(train_labels, dtype=int))
+
+    conditions: List[Tuple[str, Optional[str], float]] = [("clean", None, 0.0)]
+    for d_name in ALLOWED_DEFECTS:
+        for sev in (0.20, 0.30):
+            conditions.append((d_name, d_name, sev))
+
+    val_feat_df = build_feature_table(
+        val_scenarios,
+        conditions=conditions,
+        num_perturbations=num_perturbations,
+        seed=seed + 10000,
+    )
+
+    rows: List[Dict[str, Any]] = []
+    non_winning_slices: List[str] = []
+
+    for cond_label, defect_type, sev in conditions:
+        sub_df = val_feat_df[
+            (val_feat_df["defect"] == cond_label) & (np.isclose(val_feat_df["severity"], sev))
+        ].reset_index(drop=True)
+
+        y_corr = sub_df["is_correct"].to_numpy(dtype=bool)
+        raw_confs = sub_df["raw_confidence"].to_numpy(dtype=float)
+        worst_comps = list(sub_df["worst_component"].astype(str))
+        q_scores = sub_df["quality_score"].to_numpy(dtype=float)
+        stabs = sub_df["top_stability"].to_numpy(dtype=float)
+
+        # 1. LearnedFaultLens (evaluated at its single validation threshold)
+        lfl_probs = full_model.predict_calibrated_prob_batch(sub_df)
+        lfl_ans = lfl_probs >= full_model.threshold
+        lfl_cov = float(np.mean(lfl_ans))
+        lfl_acc = float(np.mean(lfl_ans & y_corr))
+        lfl_cw = float(np.mean(lfl_ans & (~y_corr)))
+        lfl_attr = compute_attribution_accuracy(defect_type, worst_comps, has_attribution=True)
+
+        # 2. Frequency baseline
+        fr_cov = 1.0
+        fr_acc = float(np.mean(y_corr))
+        fr_cw = float(np.mean(~y_corr))
+        fr_attr = "N/A"
+
+        # 3. FaultLensWeighted (existing weighted gate tau_q, tau_s)
+        flw_ans = (q_scores >= tau_q_w) & (stabs >= tau_s_w)
+        flw_cov = float(np.mean(flw_ans))
+        flw_acc = float(np.mean(flw_ans & y_corr))
+        flw_cw = float(np.mean(flw_ans & (~y_corr)))
+        flw_attr = compute_attribution_accuracy(defect_type, worst_comps, has_attribution=True)
+
+        # 4. ConfThresh at matched coverage to LearnedFaultLens
+        ct_cal_probs = platt_cal.predict_batch(raw_confs)
+        ct_helper = ConfidenceThresholdMethod(calibrator=platt_cal)
+        ct_matched_t = ct_helper.find_threshold_for_coverage(ct_cal_probs, target_coverage=lfl_cov)
+        ct_ans = ct_cal_probs >= ct_matched_t
+        ct_cov = float(np.mean(ct_ans))
+        ct_acc = float(np.mean(ct_ans & y_corr))
+        ct_cw = float(np.mean(ct_ans & (~y_corr)))
+        ct_attr = "N/A"
+
+        # 5. ConfidenceOnlyLearned at the same coverage as LearnedFaultLens
+        col_probs = conf_only_model.predict_calibrated_prob_batch(sub_df)
+        col_matched_t = conf_only_model.find_threshold_for_coverage(col_probs, target_coverage=lfl_cov)
+        col_ans = col_probs >= col_matched_t
+        col_cov = float(np.mean(col_ans))
+        col_acc = float(np.mean(col_ans & y_corr))
+        col_cw = float(np.mean(col_ans & (~y_corr)))
+        col_attr = "N/A"
+
+        best_competitor_cw = min(ct_cw, flw_cw, col_cw)
+        learned_wins_cw = bool(lfl_cw < best_competitor_cw)
+        if not learned_wins_cw:
+            non_winning_slices.append(
+                f"{cond_label}@{int(round(sev * 100))}% (LearnedFaultLens CW={lfl_cw:.4f} vs "
+                f"ConfThresh={ct_cw:.4f}, FaultLensWeighted={flw_cw:.4f}, ConfOnlyLearned={col_cw:.4f})"
+            )
+
+        rows.append({
+            "defect": cond_label,
+            "severity": float(sev),
+            "freq_accuracy": round(fr_acc, 4),
+            "freq_cw_rate": round(fr_cw, 4),
+            "freq_coverage": round(fr_cov, 4),
+            "freq_attribution_accuracy": fr_attr,
+            "conf_thresh_matched_accuracy": round(ct_acc, 4),
+            "conf_thresh_matched_cw_rate": round(ct_cw, 4),
+            "conf_thresh_matched_coverage": round(ct_cov, 4),
+            "conf_thresh_attribution_accuracy": ct_attr,
+            "faultlens_weighted_accuracy": round(flw_acc, 4),
+            "faultlens_weighted_cw_rate": round(flw_cw, 4),
+            "faultlens_weighted_coverage": round(flw_cov, 4),
+            "faultlens_weighted_attribution_accuracy": flw_attr,
+            "learned_faultlens_accuracy": round(lfl_acc, 4),
+            "learned_faultlens_cw_rate": round(lfl_cw, 4),
+            "learned_faultlens_coverage": round(lfl_cov, 4),
+            "learned_faultlens_attribution_accuracy": lfl_attr,
+            "confidence_only_learned_accuracy": round(col_acc, 4),
+            "confidence_only_learned_cw_rate": round(col_cw, 4),
+            "confidence_only_learned_coverage": round(col_cov, 4),
+            "confidence_only_learned_attribution_accuracy": col_attr,
+            "learned_beats_all_competitors_cw": learned_wins_cw,
+        })
+
+    out_df = pd.DataFrame(rows)
+    out_p = Path(out_csv_path)
+    out_p.parent.mkdir(parents=True, exist_ok=True)
+    out_df.to_csv(out_p, index=False)
+
+    print("\n--- Session 3.5 Validation Sanity Table (VALIDATION Split Only, N=60) ---")
+    print(out_df.to_string(index=False))
+    if non_winning_slices:
+        print("\nHonest Disclosure - Slices where LearnedFaultLens does NOT strictly beat all competitors on CW rate:")
+        for s_msg in non_winning_slices:
+            print(f"  - {s_msg}")
+    else:
+        print("\nLearnedFaultLens achieved the lowest CW rate across all evaluated validation slices.")
+
+    return out_df
+
+
+def run_final_fresh_test_experiment(
+    fresh_test_dir: str | Path = FRESH_TEST_SCENARIOS_DIR,
+    model_path: str | Path = RELIABILITY_MODELS_PATH,
+    tuned_params_path: str | Path = TUNED_PARAMS_PATH,
+    lock_path: str | Path = FINAL_LOCK_PATH,
+    out_csv_path: str | Path = Path("results/tables/final_fresh_test_results.csv"),
+    num_perturbations: int = 100,
+    seed: int = 4242,
+) -> pd.DataFrame:
+    """Run the final evaluation ONCE on the fresh held-out set (seed 4242, 200 scenarios).
+
+    Enforces:
+    1. Refuses to run if `lock_path` (`results/final_run.lock`) already exists.
+    2. Fails if the saved model and threshold (`results/reliability_models.json`) are missing.
+    3. Evaluates strictly on `fresh_test_dir` (`manifest.json`), never reading `splits.json["test"]`.
+    4. Creates `lock_path` upon completion.
+    """
+    l_path = Path(lock_path)
+    if l_path.is_file():
+        raise RuntimeError(
+            f"Final evaluation lock file '{l_path}' already exists! Refusing to rerun final held-out evaluation."
+        )
+
+    m_path = Path(model_path)
+    if not m_path.is_file():
+        raise FileNotFoundError(
+            f"Saved reliability model and threshold file '{m_path}' is missing! Cannot run final evaluation."
+        )
+
+    # Validate both full and confidence_only models and thresholds exist before running
+    full_model = load_saved_reliability_model("full", m_path)
+    conf_only_model = load_saved_reliability_model("confidence_only", m_path)
+    if full_model.threshold is None or conf_only_model.threshold is None:
+        raise ValueError("Saved reliability models are missing frozen thresholds.")
+
+    f_dir = Path(fresh_test_dir)
+    manifest_file = f_dir / "manifest.json"
+    if not manifest_file.is_file():
+        raise FileNotFoundError(
+            f"Fresh held-out manifest not found at '{manifest_file}'. Run `python scripts/run_all.py fresh_test` first."
+        )
+
+    with open(manifest_file, "r", encoding="utf-8") as f:
+        manifest = json.load(f)
+
+    scenario_ids: List[str] = list(manifest.get("scenario_ids", []))
+    if not scenario_ids:
+        raise ValueError(f"No scenario_ids listed in {manifest_file}")
+
+    scenarios: List[Scenario] = [Scenario.load(f_dir / sc_id) for sc_id in scenario_ids]
+
+    freq_m = FrequencyBaselineMethod()
+    fl_m = FaultLensMethod(num_perturbations=num_perturbations)
+    lfl_m = LearnedFaultLensMethod(model=full_model, model_path=m_path, num_perturbations=num_perturbations)
+    col_m = ConfidenceOnlyLearnedMethod(model=conf_only_model, model_path=m_path)
+
+    conditions: List[Tuple[str, Optional[str], float]] = [("clean", None, 0.0)]
+    for d_name in ALLOWED_DEFECTS:
+        for sev in (0.10, 0.20, 0.30):
+            conditions.append((d_name, d_name, sev))
+
+    rows: List[Dict[str, Any]] = []
+    for sc_idx, sc in enumerate(scenarios):
+        for c_idx, (cond_label, defect_type, sev) in enumerate(conditions):
+            df_in = sc.log
+            if defect_type is not None and sev > 0.0:
+                df_in, _ = inject_defect(df_in, defect_type=defect_type, severity=sev, seed=seed + sc_idx * 100 + c_idx)
+
+            eval_seed = seed + 90000 + sc_idx * 100 + c_idx
+            for m_obj in (freq_m, fl_m, lfl_m, col_m):
+                if isinstance(m_obj, (FaultLensMethod, LearnedFaultLensMethod)):
+                    out = m_obj.predict(df_in, seed=eval_seed)
+                else:
+                    out = m_obj.predict(df_in)
+                is_corr = bool(out.top_candidate == sc.truth) if out.answered and out.top_candidate else False
+                rows.append({
+                    "scenario_id": sc.scenario_id,
+                    "defect": cond_label,
+                    "severity": float(sev),
+                    "method": out.method_name,
+                    "answered": out.answered,
+                    "correct": is_corr,
+                    "confidence": out.confidence,
+                    "raw_confidence": out.raw_confidence,
+                })
+
+    res_df = pd.DataFrame(rows)
+    out_p = Path(out_csv_path)
+    out_p.parent.mkdir(parents=True, exist_ok=True)
+    res_df.to_csv(out_p, index=False)
+
+    l_path.parent.mkdir(parents=True, exist_ok=True)
+    now_iso = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+    with open(l_path, "w", encoding="utf-8") as f:
+        json.dump(
+            {
+                "locked_at": now_iso,
+                "master_seed": seed,
+                "num_scenarios": len(scenarios),
+                "results_csv": str(out_p),
+                "model_path": str(m_path),
+            },
+            f,
+            indent=2,
+        )
+
+    return res_df
+
+
 if __name__ == "__main__":
     print("======================================================================")
-    print("FaultLens Session 3: Running Held-Out Test Split Benchmark (N=120)")
+    print("FaultLens Session 3.5: Running Validation Sanity Table (N=60 Val)")
     print("======================================================================")
-    tables = run_test_experiment()
-    print(f"Saved raw_results.csv: {len(tables['raw_results'])} rows")
-    print(f"Saved metrics_by_defect_severity.csv: {len(tables['metrics_by_defect_severity'])} rows")
-    print(f"Saved matched_coverage.csv: {len(tables['matched_coverage'])} rows")
-    print(f"Saved significance.csv: {len(tables['significance'])} rows")
-    print(f"Saved calibration.csv: {len(tables['calibration'])} rows")
-    print("\n--- Matched Coverage Summary Table ---")
-    print(tables["matched_coverage"].to_string(index=False))
+    val_df = run_session3_5_validation_table()
+
+

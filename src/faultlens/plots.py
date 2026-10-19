@@ -100,7 +100,7 @@ def plot_hero_cw_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_D
         )
         ax.fill_between(x_pct, y_low, y_high, color=METHOD_COLORS[method], alpha=0.14)
 
-    ax.set_title("FaultLens Reduces Confidently-Wrong Diagnoses as Data Defects Worsen", fontsize=12, fontweight="bold")
+    ax.set_title("Confidently-Wrong Rate vs. Injected Defect Severity (Exploratory Split)", fontsize=12, fontweight="bold")
     ax.set_xlabel("Injected Defect Severity (%)", fontsize=11)
     ax.set_ylabel("Confidently-Wrong Rate (%) [Lower is Better]", fontsize=11)
     ax.set_xticks([0, 10, 20, 30])
@@ -143,7 +143,7 @@ def plot_hero_cw_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_D
 
     handles, labels = axes_flat[0].get_legend_handles_labels()
     fig2.suptitle(
-        "Confidently-Wrong Rate Across Individual Defect Types (Test Split, N=120 Scenarios)",
+        "Confidently-Wrong Rate by Defect Type and Severity (Exploratory Split, N=120 Scenarios)",
         fontsize=13,
         fontweight="bold",
         y=0.98,
@@ -155,7 +155,7 @@ def plot_hero_cw_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_D
 
 
 def plot_risk_coverage_curves(raw_df: pd.DataFrame, out_dir: Path = FIGURES_DIR) -> List[Path]:
-    """Figure 2: Risk-coverage curves for all 3 methods on defective test evaluations."""
+    """Figure 2: Risk-coverage curves for all 3 methods on defective exploratory evaluations."""
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
     def_df = raw_df[raw_df["severity"] > 0.0].copy()
 
@@ -200,7 +200,7 @@ def plot_risk_coverage_curves(raw_df: pd.DataFrame, out_dir: Path = FIGURES_DIR)
             zorder=5,
         )
 
-    ax.set_title("Selective Risk-Coverage Tradeoff Across Defective Test Logs", fontsize=12, fontweight="bold")
+    ax.set_title("Selective Risk-Coverage Curves Across Defective Logs (Exploratory Split)", fontsize=12, fontweight="bold")
     ax.set_xlabel("Coverage (% of Scenarios Answered)", fontsize=11)
     ax.set_ylabel("Selective Risk (% Error Among Answered) [Lower is Better]", fontsize=11)
     ax.set_xlim(0, 103)
@@ -210,7 +210,7 @@ def plot_risk_coverage_curves(raw_df: pd.DataFrame, out_dir: Path = FIGURES_DIR)
 
 
 def plot_coverage_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_DIR) -> List[Path]:
-    """Figure 3: Coverage vs severity demonstrating adaptive abstention under worsening defects."""
+    """Figure 3: Coverage vs severity across evaluated methods."""
     fig, ax = plt.subplots(figsize=(7.5, 4.8))
 
     for method in ["frequency_baseline", "confidence_threshold", "faultlens"]:
@@ -237,7 +237,7 @@ def plot_coverage_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_
         )
         ax.fill_between(x_pct, y_low, y_high, color=METHOD_COLORS[method], alpha=0.14)
 
-    ax.set_title("FaultLens Abstains More Frequently as Telemetry Quality Degrades", fontsize=12, fontweight="bold")
+    ax.set_title("Diagnostic Coverage vs. Injected Defect Severity (Exploratory Split)", fontsize=12, fontweight="bold")
     ax.set_xlabel("Injected Defect Severity (%)", fontsize=11)
     ax.set_ylabel("Diagnostic Coverage (% Answered)", fontsize=11)
     ax.set_xticks([0, 10, 20, 30])
@@ -248,7 +248,7 @@ def plot_coverage_vs_severity(metrics_df: pd.DataFrame, out_dir: Path = FIGURES_
 
 
 def plot_cw_reduction_heatmap(matched_df: pd.DataFrame, out_dir: Path = FIGURES_DIR) -> List[Path]:
-    """Figure 4: Heatmap of defect type x severity vs CW reduction (FaultLens vs Frequency baseline)."""
+    """Figure 4: Heatmap of defect type x severity vs CW difference (FaultLens vs Frequency baseline)."""
     fig, ax = plt.subplots(figsize=(7.5, 4.6))
 
     severities = [0.0, 0.10, 0.20, 0.30]
@@ -262,7 +262,7 @@ def plot_cw_reduction_heatmap(matched_df: pd.DataFrame, out_dir: Path = FIGURES_
 
     im = ax.imshow(matrix, cmap="YlGnBu", aspect="auto")
     cbar = fig.colorbar(im, ax=ax)
-    cbar.set_label("CW Reduction vs Frequency Baseline (pp)", fontsize=10)
+    cbar.set_label("CW Difference vs Frequency Baseline (pp)", fontsize=10)
 
     ax.set_xticks(range(len(severities)))
     ax.set_xticklabels([f"{int(round(s * 100))}%" for s in severities], fontsize=10)
@@ -276,7 +276,7 @@ def plot_cw_reduction_heatmap(matched_df: pd.DataFrame, out_dir: Path = FIGURES_
             txt_color = "white" if val > 0.55 * max_val and max_val > 5.0 else "black"
             ax.text(j, i, f"{val:+.1f} pp", ha="center", va="center", color=txt_color, fontweight="bold", fontsize=10)
 
-    ax.set_title("Confidently-Wrong Rate Reduction (Percentage Points): FaultLens vs Frequency", fontsize=11.5, fontweight="bold")
+    ax.set_title("Confidently-Wrong Rate Difference (pp): FaultLens vs. Frequency (Exploratory Split)", fontsize=11.5, fontweight="bold")
     ax.set_xlabel("Defect Severity", fontsize=11)
     ax.set_ylabel("Defect Type", fontsize=11)
     return _save_both_formats(fig, out_dir / "fig4_cw_reduction_heatmap")
@@ -311,7 +311,7 @@ def plot_stability_histogram(raw_df: pd.DataFrame, out_dir: Path = FIGURES_DIR) 
             edgecolor="black",
         )
 
-    ax.set_title("Perturbation Stability Separates Reliable from Fragile Diagnoses", fontsize=12, fontweight="bold")
+    ax.set_title("Distribution of Perturbation Top-1 Stability by Diagnosis Correctness (Exploratory Split)", fontsize=12, fontweight="bold")
     ax.set_xlabel("Perturbation Top-1 Stability Score (top_stability)", fontsize=11)
     ax.set_ylabel("Probability Density", fontsize=11)
     ax.grid(True, linestyle="--", alpha=0.4)
@@ -346,7 +346,7 @@ def plot_calibration_reliability(cal_df: pd.DataFrame, out_dir: Path = FIGURES_D
             markersize=6,
         )
 
-    ax.set_title("Reliability Diagram: Post-Hoc Calibration Reduces Overconfidence", fontsize=11.5, fontweight="bold")
+    ax.set_title("Calibration Reliability Diagram Across Confidence Series (Exploratory Split)", fontsize=11.5, fontweight="bold")
     ax.set_xlabel("Predicted Confidence", fontsize=11)
     ax.set_ylabel("Empirical Top-1 Accuracy", fontsize=11)
     ax.set_xlim(0.0, 1.02)

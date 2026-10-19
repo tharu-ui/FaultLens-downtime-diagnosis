@@ -1,11 +1,15 @@
 # FaultLens Experiment Configuration
 # Fixed design: 300 scenarios, 40/20/40 train/val/test split
-# 3 methods ONLY, 4 defects ONLY, 4 severities
+# 3 original methods + 2 Session 3.5 learned reliability methods, 4 defects ONLY, 4 severities
 
 experiment:
   name: "faultlens_eval_v1"
   master_seed: 42
   num_scenarios: 300
+  extra_train_seed: 1337
+  extra_train_scenarios: 120
+  fresh_test_seed: 4242
+  fresh_test_scenarios: 200
   splits:
     train_frac: 0.40
     val_frac: 0.20
@@ -15,6 +19,8 @@ methods:
   - frequency_baseline
   - confidence_threshold
   - faultlens
+  - learned_faultlens
+  - confidence_only_learned
 
 defects:
   - missing_events
@@ -57,11 +63,18 @@ quality_scoring:
     Packer: 0.15
 
 policy:
-  # Tuned strictly on train+validation splits, reported on test set
+  # Tuned strictly on train+validation splits
   gate_mode: "component"  # "weighted" or "component"
   delta: 0.15
   tau_q: 0.75
   tau_s: 0.80
   buffer: 0.05
   min_coverage: 0.60
+  target_coverage: 0.65
   require_margin_ci_positive: false
+
+reliability:
+  cv_folds: 5
+  target_coverage: 0.65
+  model_path: "results/reliability_models.json"
+  final_lock_path: "results/final_run.lock"

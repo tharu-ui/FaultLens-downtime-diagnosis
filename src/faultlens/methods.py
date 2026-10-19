@@ -1,37 +1,51 @@
-"""FaultLens Evaluation Methods: The 3 Comparative Paradigms.
+"""FaultLens Evaluation Methods: Comparative & Learned Paradigms.
 
-Provides unified interfaces for the three evaluated methods:
+Provides unified interfaces for the evaluated diagnostic methods:
 1. frequency_baseline: Naive downtime summation; always answers (never abstains).
 2. confidence_threshold: Answers only if post-hoc calibrated probability exceeds threshold.
    Includes matched-coverage calibration tuning on validation split.
 3. faultlens: Evidence-aware diagnosis combining data quality, perturbation stability,
    disciplined abstention, and actionable verification summaries.
+4. learned_faultlens (Session 3.5): Logistic regression reliability model trained on TRAIN
+   over quality sub-scores, stability, margin CI width, and log-repair sensitivity features,
+   calibrated with a single threshold chosen on VALIDATION.
+5. confidence_only_learned (Session 3.5): Ablation trained on raw_confidence only through
+   the exact same reliability model code path.
 
-All three methods rely on the identical underlying shared diagnoser.
+All methods rely on the identical underlying shared diagnoser.
 """
 
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from typing import Any, Dict, List, Optional, Tuple
+from pathlib import Path
+from typing import Any, Dict, List, Optional, Tuple, Type
 
 import numpy as np
 import pandas as pd
 
 from faultlens.diagnoser import ConfidenceCalibrator, DiagnosisResult, diagnose
 from faultlens.policy import (
+    EvidenceSummary,
     PolicyDecision,
     apply_policy,
+    generate_verification_message,
     load_tuned_gate_config,
     load_tuned_policy_params,
 )
 from faultlens.quality import QualityReport, evaluate_data_quality
+from faultlens.reliability import (
+    RELIABILITY_MODELS_PATH,
+    LearnedReliabilityModel,
+    extract_reliability_features,
+    load_saved_reliability_model,
+)
 from faultlens.stability import StabilityReport, evaluate_stability
 
 
 @dataclass
 class MethodOutput:
-    """Standardized output produced by all three evaluated diagnostic methods."""
+    """Standardized output produced by all evaluated diagnostic methods."""
 
     method_name: str
     top_candidate: Optional[Tuple[str, str]]
@@ -258,3 +272,189 @@ class FaultLensMethod:
             top_downtime_min=diag.top_downtime_min,
             margin_ratio=diag.margin_ratio,
         )
+
+
+class LearnedFaultLensMethod:
+    """Method 4 (Session 3.5): Learned Evidence-Aware FaultLens Method.
+
+    Uses a logistic regression reliability classifier trained on TRAIN over the 16
+    quality, stability, margin CI width, and log-repair features, Platt-calibrated on
+    VALIDATION with a single threshold chosen on VALIDATION.
+    """
+
+    def __init__(
+        self,
+        model: Optional[LearnedReliabilityModel] = None,
+        model_path: str | Path = RELIABILITY_MODELS_PATH,
+        threshold: Optional[float] = None,
+        buffer: float = 0.05,
+        num_perturbations: int = 100,
+    ) -> None:
+        self.method_name = "learned_faultlens"
+        self.model_path = Path(model_path)
+        self.model = model
+        if self.model is None and self.model_path.is_file():
+            self.model = load_saved_reliability_model("full", self.model_path)
+        self.threshold = (
+            float(threshold)
+            if threshold is not None
+            else (self.model.threshold if self.model is not None else 0.65)
+        )
+        self.buffer = buffer
+        self.num_perturbations = num_perturbations
+
+    def _ensure_model(self) -> LearnedReliabilityModel:
+        if self.model is None:
+            self.model = load_saved_reliability_model("full", self.model_path)
+            if self.threshold is None:
+                self.threshold = self.model.threshold
+        return self.model
+
+    def threshold_for_target_coverage(
+        self,
+        target: float,
+        calibrated_confs: Optional[np.ndarray | List[float]] = None,
+    ) -> float:
+        """Select threshold on calibrated reliability probabilities for target coverage."""
+        mdl = self._ensure_model()
+        ref = calibrated_confs if calibrated_confs is not None else mdl.validation_calibrated_probs
+        if ref is None:
+            raise ValueError("No reference calibrated probabilities available for coverage matching.")
+        tuned_t = mdl.find_threshold_for_coverage(ref, target_coverage=target)
+        self.threshold = tuned_t
+        return tuned_t
+
+    def predict(self, df: pd.DataFrame, seed: int = 42) -> MethodOutput:
+        """Extract full reliability features, score with learned model, and attach evidence summary."""
+        mdl = self._ensure_model()
+        feats, diag, q_rep, s_rep, rep_rep = extract_reliability_features(
+            df,
+            num_perturbations=self.num_perturbations,
+            seed=seed,
+        )
+        cal_prob = mdl.predict_calibrated_prob(feats)
+        answered = bool(cal_prob >= self.threshold)
+
+        if answered:
+            flag = "GREEN" if cal_prob >= (self.threshold + self.buffer) else "AMBER"
+        else:
+            flag = "RED"
+
+        v_msg = generate_verification_message(q_rep, s_rep, df)
+        sorted_subs = dict(sorted(q_rep.sub_scores.items(), key=lambda kv: kv[1])[:2])
+
+        ev_summary = {
+            "strategy": "learned_reliability",
+            "threshold": round(self.threshold, 4),
+            "calibrated_reliability": round(cal_prob, 4),
+            "worst_component": q_rep.worst_component,
+            "quality_score": round(q_rep.overall_score, 4),
+            "stability_pct": round(s_rep.top_stability * 100.0, 1),
+            "weakest_sub_scores": {k: round(v, 4) for k, v in sorted_subs.items()},
+            "repair_top_candidate_changed": rep_rep.top_candidate_changed,
+            "repaired_rows_count": rep_rep.total_repaired_rows,
+            "verification_message": v_msg,
+        }
+
+        return MethodOutput(
+            method_name=self.method_name,
+            top_candidate=diag.top_candidate if answered else None,
+            answered=answered,
+            confidence=cal_prob,
+            flag=flag,
+            evidence_summary=ev_summary,
+            raw_confidence=diag.raw_confidence,
+            calibrated_confidence=cal_prob,
+            top_downtime_min=diag.top_downtime_min,
+            margin_ratio=diag.margin_ratio,
+        )
+
+
+class ConfidenceOnlyLearnedMethod:
+    """Method 5 (Session 3.5 Ablation): Learned model trained on raw_confidence only.
+
+    Uses the exact same `LearnedReliabilityModel` code path as `LearnedFaultLensMethod`,
+    restricted to `["raw_confidence"]` with no quality or repair attribution.
+    """
+
+    def __init__(
+        self,
+        model: Optional[LearnedReliabilityModel] = None,
+        model_path: str | Path = RELIABILITY_MODELS_PATH,
+        threshold: Optional[float] = None,
+        buffer: float = 0.05,
+    ) -> None:
+        self.method_name = "confidence_only_learned"
+        self.model_path = Path(model_path)
+        self.model = model
+        if self.model is None and self.model_path.is_file():
+            self.model = load_saved_reliability_model("confidence_only", self.model_path)
+        self.threshold = (
+            float(threshold)
+            if threshold is not None
+            else (self.model.threshold if self.model is not None else 0.65)
+        )
+        self.buffer = buffer
+
+    def _ensure_model(self) -> LearnedReliabilityModel:
+        if self.model is None:
+            self.model = load_saved_reliability_model("confidence_only", self.model_path)
+            if self.threshold is None:
+                self.threshold = self.model.threshold
+        return self.model
+
+    def threshold_for_target_coverage(
+        self,
+        target: float,
+        calibrated_confs: Optional[np.ndarray | List[float]] = None,
+    ) -> float:
+        """Select threshold on calibrated probabilities for target coverage."""
+        mdl = self._ensure_model()
+        ref = calibrated_confs if calibrated_confs is not None else mdl.validation_calibrated_probs
+        if ref is None:
+            raise ValueError("No reference calibrated probabilities available for coverage matching.")
+        tuned_t = mdl.find_threshold_for_coverage(ref, target_coverage=target)
+        self.threshold = tuned_t
+        return tuned_t
+
+    def predict(self, df: pd.DataFrame) -> MethodOutput:
+        """Run shared diagnoser and score using the confidence-only learned model."""
+        mdl = self._ensure_model()
+        diag: DiagnosisResult = diagnose(df)
+        raw_conf = diag.raw_confidence
+        cal_prob = mdl.predict_calibrated_prob({"raw_confidence": raw_conf})
+        answered = bool(cal_prob >= self.threshold)
+
+        if answered:
+            flag = "GREEN" if cal_prob >= (self.threshold + self.buffer) else "AMBER"
+        else:
+            flag = "RED"
+
+        return MethodOutput(
+            method_name=self.method_name,
+            top_candidate=diag.top_candidate if answered else None,
+            answered=answered,
+            confidence=cal_prob,
+            flag=flag,
+            evidence_summary={
+                "strategy": "confidence_only_learned_ablation",
+                "threshold": round(self.threshold, 4),
+                "calibrated_confidence": round(cal_prob, 4),
+                "attribution": "N/A",
+            },
+            raw_confidence=raw_conf,
+            calibrated_confidence=cal_prob,
+            top_downtime_min=diag.top_downtime_min,
+            margin_ratio=diag.margin_ratio,
+        )
+
+
+def get_available_methods() -> Dict[str, Type[Any]]:
+    """Return a dictionary mapping method name to method class for dynamic discovery."""
+    return {
+        "frequency_baseline": FrequencyBaselineMethod,
+        "confidence_threshold": ConfidenceThresholdMethod,
+        "faultlens": FaultLensMethod,
+        "learned_faultlens": LearnedFaultLensMethod,
+        "confidence_only_learned": ConfidenceOnlyLearnedMethod,
+    }
