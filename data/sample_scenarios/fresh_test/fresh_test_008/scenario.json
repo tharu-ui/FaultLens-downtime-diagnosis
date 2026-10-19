@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_008",
+  "seed": 2850275,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 1717.94,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 258.05,
+  "margin": 0.8498,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "total_stops": 258,
+    "total_downtime_hours": 75.75,
+    "micro_stops_count": 34
+  },
+  "num_events": 258
+}

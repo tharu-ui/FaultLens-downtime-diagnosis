@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_169",
+  "seed": 2074905,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 771.82,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 648.74,
+  "margin": 0.1595,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Press",
+      "jam"
+    ],
+    "competitor_target": [
+      "Packer",
+      "jam"
+    ],
+    "total_stops": 286,
+    "total_downtime_hours": 75.98,
+    "micro_stops_count": 34
+  },
+  "num_events": 286
+}

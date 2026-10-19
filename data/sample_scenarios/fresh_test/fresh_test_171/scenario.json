@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_171",
+  "seed": 2525383,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 539.82,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 360.84000000000003,
+  "margin": 0.3316,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Welder",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "overheating"
+    ],
+    "total_stops": 254,
+    "total_downtime_hours": 67.23,
+    "micro_stops_count": 22
+  },
+  "num_events": 254
+}

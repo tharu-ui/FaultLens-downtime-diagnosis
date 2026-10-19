@@ -1,0 +1,7 @@
+{
+  "locked_at": "2026-10-19 07:54:49 UTC",
+  "master_seed": 4242,
+  "num_scenarios": 200,
+  "results_csv": "results\\tables\\final_fresh_test_results.csv",
+  "model_path": "results\\reliability_models.json"
+}

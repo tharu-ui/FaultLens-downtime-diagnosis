@@ -27,3 +27,10 @@ __pycache__/
 .pytest_cache/
 .venv/
 
+
+__pycache__/
+*.pyc
+.pytest_cache/
+.venv/
+.env
+.env.local

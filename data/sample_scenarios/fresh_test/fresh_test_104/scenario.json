@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_104",
+  "seed": 2025790,
+  "truth": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "truth_downtime": 1227.83,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 425.81,
+  "margin": 0.6532,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Welder",
+      "electrical_fault"
+    ],
+    "competitor_target": [
+      "Welder",
+      "sensor_fault"
+    ],
+    "total_stops": 249,
+    "total_downtime_hours": 68.38,
+    "micro_stops_count": 23
+  },
+  "num_events": 249
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_134",
+  "seed": 2710050,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 1284.3799999999999,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 307.99,
+  "margin": 0.7602,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Press",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Welder",
+      "electrical_fault"
+    ],
+    "total_stops": 270,
+    "total_downtime_hours": 72.41,
+    "micro_stops_count": 35
+  },
+  "num_events": 270
+}

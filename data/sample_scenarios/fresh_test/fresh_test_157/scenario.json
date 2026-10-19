@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_157",
+  "seed": 2173820,
+  "truth": [
+    "Packer",
+    "jam"
+  ],
+  "truth_downtime": 399.9,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 390.65,
+  "margin": 0.0231,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Loader",
+      "overheating"
+    ],
+    "competitor_target": [
+      "Packer",
+      "jam"
+    ],
+    "total_stops": 251,
+    "total_downtime_hours": 61.85,
+    "micro_stops_count": 27
+  },
+  "num_events": 251
+}

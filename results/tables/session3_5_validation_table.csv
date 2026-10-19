@@ -1,0 +1,10 @@
+defect,severity,freq_accuracy,freq_cw_rate,freq_coverage,freq_attribution_accuracy,conf_thresh_matched_accuracy,conf_thresh_matched_cw_rate,conf_thresh_matched_coverage,conf_thresh_attribution_accuracy,faultlens_weighted_accuracy,faultlens_weighted_cw_rate,faultlens_weighted_coverage,faultlens_weighted_attribution_accuracy,learned_faultlens_accuracy,learned_faultlens_cw_rate,learned_faultlens_coverage,learned_faultlens_attribution_accuracy,confidence_only_learned_accuracy,confidence_only_learned_cw_rate,confidence_only_learned_coverage,confidence_only_learned_attribution_accuracy,learned_beats_all_competitors_cw
+clean,0.0,1.0,0.0,1.0,N/A,1.0,0.0,1.0,N/A,0.6833,0.0,0.6833,N/A,1.0,0.0,1.0,N/A,1.0,0.0,1.0,N/A,False
+missing_events,0.2,0.8333,0.1667,1.0,N/A,0.5833,0.0667,0.65,N/A,0.5667,0.1,0.6667,1.0,0.6,0.05,0.65,1.0,0.5833,0.0667,0.65,N/A,True
+missing_events,0.3,0.6,0.4,1.0,N/A,0.2833,0.0333,0.3167,N/A,0.4167,0.1667,0.5833,1.0,0.2667,0.05,0.3167,1.0,0.2833,0.0333,0.3167,N/A,False
+incorrect_reason_codes,0.2,0.7167,0.2833,1.0,N/A,0.5,0.05,0.55,N/A,0.5833,0.0667,0.65,1.0,0.5167,0.0333,0.55,1.0,0.5,0.05,0.55,N/A,True
+incorrect_reason_codes,0.3,0.5333,0.4667,1.0,N/A,0.2,0.1167,0.3167,N/A,0.3833,0.2,0.5833,1.0,0.25,0.0667,0.3167,1.0,0.2,0.1167,0.3167,N/A,True
+timestamp_errors,0.2,0.8667,0.1333,1.0,N/A,0.8333,0.0667,0.9,N/A,0.65,0.0333,0.6833,1.0,0.8333,0.0667,0.9,1.0,0.8333,0.0667,0.9,N/A,False
+timestamp_errors,0.3,0.8333,0.1667,1.0,N/A,0.7333,0.0333,0.7667,N/A,0.6167,0.05,0.6667,1.0,0.6833,0.0833,0.7667,1.0,0.7333,0.0333,0.7667,N/A,False
+duplicate_records,0.2,0.4667,0.5333,1.0,N/A,0.2333,0.15,0.3833,N/A,0.4333,0.4667,0.9,1.0,0.3833,0.0,0.3833,1.0,0.2333,0.15,0.3833,N/A,True
+duplicate_records,0.3,0.3833,0.6167,1.0,N/A,0.1833,0.0667,0.25,N/A,0.3667,0.4667,0.8333,1.0,0.25,0.0,0.25,1.0,0.1833,0.0667,0.25,N/A,True

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_010",
+  "seed": 2029162,
+  "truth": [
+    "Press",
+    "overheating"
+  ],
+  "truth_downtime": 346.36,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 310.62,
+  "margin": 0.1032,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "jam"
+    ],
+    "competitor_target": [
+      "Packer",
+      "jam"
+    ],
+    "total_stops": 257,
+    "total_downtime_hours": 57.26,
+    "micro_stops_count": 31
+  },
+  "num_events": 257
+}

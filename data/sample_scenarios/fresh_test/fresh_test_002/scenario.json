@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_002",
+  "seed": 2855853,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 455.62,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 444.09000000000003,
+  "margin": 0.0253,
+  "difficulty": "close",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Press",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Loader",
+      "jam"
+    ],
+    "total_stops": 262,
+    "total_downtime_hours": 63.47,
+    "micro_stops_count": 32
+  },
+  "num_events": 262
+}

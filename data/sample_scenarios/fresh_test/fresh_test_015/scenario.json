@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_015",
+  "seed": 2239006,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 1083.54,
+  "runner_up": [
+    "Welder",
+    "electrical_fault"
+  ],
+  "runner_up_downtime": 504.37,
+  "margin": 0.5345,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Loader",
+      "material_shortage"
+    ],
+    "total_stops": 267,
+    "total_downtime_hours": 69.29,
+    "micro_stops_count": 28
+  },
+  "num_events": 267
+}

@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_179",
+  "seed": 2752547,
+  "truth": [
+    "Press",
+    "tool_wear"
+  ],
+  "truth_downtime": 465.19,
+  "runner_up": [
+    "Packer",
+    "material_shortage"
+  ],
+  "runner_up_downtime": 382.23,
+  "margin": 0.1783,
+  "difficulty": "moderate",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "sensor_fault"
+    ],
+    "competitor_target": [
+      "Packer",
+      "jam"
+    ],
+    "total_stops": 265,
+    "total_downtime_hours": 60.59,
+    "micro_stops_count": 32
+  },
+  "num_events": 265
+}

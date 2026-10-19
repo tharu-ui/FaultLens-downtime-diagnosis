@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_039",
+  "seed": 2909340,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 980.78,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 484.60999999999996,
+  "margin": 0.5059,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "overheating"
+    ],
+    "total_stops": 274,
+    "total_downtime_hours": 69.64,
+    "micro_stops_count": 47
+  },
+  "num_events": 274
+}

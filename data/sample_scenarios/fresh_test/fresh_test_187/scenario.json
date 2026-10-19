@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_187",
+  "seed": 2313303,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 392.95,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 305.52,
+  "margin": 0.2225,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "moderate",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Press",
+      "overheating"
+    ],
+    "total_stops": 264,
+    "total_downtime_hours": 64.63,
+    "micro_stops_count": 31
+  },
+  "num_events": 264
+}

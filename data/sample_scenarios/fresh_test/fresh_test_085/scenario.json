@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_085",
+  "seed": 2823540,
+  "truth": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "truth_downtime": 373.46,
+  "runner_up": [
+    "Press",
+    "overheating"
+  ],
+  "runner_up_downtime": 295.35,
+  "margin": 0.2092,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "close",
+    "primary_target": [
+      "Welder",
+      "tool_wear"
+    ],
+    "competitor_target": [
+      "Welder",
+      "electrical_fault"
+    ],
+    "total_stops": 253,
+    "total_downtime_hours": 57.34,
+    "micro_stops_count": 28
+  },
+  "num_events": 253
+}

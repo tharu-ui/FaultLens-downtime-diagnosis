@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_078",
+  "seed": 2510567,
+  "truth": [
+    "Packer",
+    "jam"
+  ],
+  "truth_downtime": 987.62,
+  "runner_up": [
+    "Loader",
+    "jam"
+  ],
+  "runner_up_downtime": 344.1,
+  "margin": 0.6516,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "jam"
+    ],
+    "competitor_target": [
+      "Loader",
+      "jam"
+    ],
+    "total_stops": 271,
+    "total_downtime_hours": 70.69,
+    "micro_stops_count": 42
+  },
+  "num_events": 271
+}

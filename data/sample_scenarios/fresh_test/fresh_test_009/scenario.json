@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_009",
+  "seed": 2346623,
+  "truth": [
+    "Packer",
+    "jam"
+  ],
+  "truth_downtime": 893.01,
+  "runner_up": [
+    "Welder",
+    "sensor_fault"
+  ],
+  "runner_up_downtime": 509.0,
+  "margin": 0.43,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Packer",
+      "jam"
+    ],
+    "competitor_target": [
+      "Packer",
+      "sensor_fault"
+    ],
+    "total_stops": 274,
+    "total_downtime_hours": 73.71,
+    "micro_stops_count": 28
+  },
+  "num_events": 274
+}

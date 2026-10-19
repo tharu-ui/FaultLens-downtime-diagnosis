@@ -1,0 +1,31 @@
+{
+  "scenario_id": "fresh_test_175",
+  "seed": 2190674,
+  "truth": [
+    "Loader",
+    "jam"
+  ],
+  "truth_downtime": 705.99,
+  "runner_up": [
+    "Press",
+    "tool_wear"
+  ],
+  "runner_up_downtime": 401.62,
+  "margin": 0.4311,
+  "difficulty": "easy",
+  "metadata": {
+    "target_difficulty": "easy",
+    "primary_target": [
+      "Loader",
+      "jam"
+    ],
+    "competitor_target": [
+      "Loader",
+      "material_shortage"
+    ],
+    "total_stops": 242,
+    "total_downtime_hours": 62.99,
+    "micro_stops_count": 29
+  },
+  "num_events": 242
+}
