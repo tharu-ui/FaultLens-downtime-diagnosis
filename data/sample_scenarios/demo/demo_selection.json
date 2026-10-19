@@ -1,0 +1,42 @@
+{
+  "disclaimer": "Hand-picked illustrative scenarios from TRAIN/VALIDATION splits. Not representative of overall distribution.",
+  "case_a": {
+    "scenario_id": "scenario_001",
+    "split": "val",
+    "defect": "incorrect_reason_codes",
+    "severity": 0.3,
+    "truth": [
+      "Press",
+      "tool_wear"
+    ],
+    "frequency_candidate": [
+      "Welder",
+      "overheating"
+    ],
+    "why_chosen": "Frequency baseline confidently selects incorrect cause under incorrect_reason_codes (30%), while FaultLens abstains with an actionable 'what to verify' recommendation."
+  },
+  "case_b": {
+    "scenario_id": "scenario_008",
+    "split": "val",
+    "defect": "missing_events",
+    "severity": 0.0,
+    "truth": [
+      "Press",
+      "tool_wear"
+    ],
+    "why_chosen": "Clean scenario: All 4 methods agree on ground truth with high quality, 100% stability, and GREEN badge."
+  },
+  "case_c": {
+    "scenario_id": "scenario_001",
+    "split": "val",
+    "defect": "missing_events",
+    "severity": 0.0,
+    "truth": [
+      "Press",
+      "tool_wear"
+    ],
+    "top_stability": 0.2,
+    "margin_ci_crosses_zero": true,
+    "why_chosen": "Near-tie scenario: Low bootstrap stability (20.0%) exposes diagnostic ambiguity, warning operators against overconfidence."
+  }
+}
