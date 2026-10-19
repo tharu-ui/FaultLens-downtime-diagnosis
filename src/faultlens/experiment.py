@@ -1000,7 +1000,7 @@ def write_summary_markdown(
         "",
         f"> **Disclosure**: All scenarios and event logs are 100% synthetic. Thresholds (`gate_mode={gate_mode}`, "
         f"`tau_q={tau_q:.4f}`, `delta={delta:.4f}`, `tau_s={tau_s:.4f}`, `conf_threshold={val_conf_threshold:.4f}`) "
-        "were tuned without touching the test split and evaluated once on the held-out test split (120 scenarios).",
+        "were tuned on train and validation scenarios only. The test split (120 scenarios) was also used in an earlier exploratory run before the Session 2.5 fixes, so these results are reported as exploratory and not as a clean one shot held out result.",
         "",
         "## Headline Comparison at Matched Coverage (`matched_coverage.csv`)",
         "",
