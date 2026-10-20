@@ -16,11 +16,12 @@ Downtime diagnoses on modern manufacturing lines depend on machine-event and SCA
 ## Hard Rules & Scope
 - **100% Synthetic Data**: All events and scenarios are procedurally generated with fixed seeds. No real plant data and no runtime network calls.
 - **Strictly Grounded Claims**: No unverified superlatives ("revolutionary", "first of its kind", "no tool does this").
-- **Clear Evaluation Boundary**: Fixed 40/20/40 train/val/test splits. All threshold tuning is performed on validation only; all benchmark numbers are evaluated on test.
-- **Three Evaluated Methods ONLY**:
-  1. `frequency_baseline`: Naive downtime summation.
-  2. `confidence_threshold`: Margin-based softmax with post-hoc probability calibration.
-  3. `faultlens`: Calibrated diagnoser + data quality score + stability testing + abstention policy.
+- **Clear Evaluation Boundary**: Fixed 40/20/40 train/val/test splits. Models are trained on train and thresholds are chosen on validation only. The final numbers come from 200 fresh scenarios (seed 4242), run once with a frozen model. An earlier test split was used in exploratory runs and is not reported as a held out result.
+- **Four Evaluated Methods**:
+  1. `frequency_baseline`: naive downtime summation.
+  2. `faultlens`: calibrated diagnoser, data quality score, stability testing and a weighted abstention gate.
+  3. `confidence_only_learned`: learned reliability score that uses confidence alone.
+  4. `learned_faultlens`: learned reliability score that combines confidence, quality, stability and a repair check.
 
 ---
 
@@ -57,3 +58,13 @@ make data
 # Run unit tests
 make test
 ```
+
+## Run the Dashboard
+```bash
+pip install -r requirements.txt
+streamlit run app/dashboard.py
+```
+
+The dashboard has three data sources: curated demo cases, the train and validation scenarios, and a CSV upload. Two sample files are in the sample_data folder: clean_log.csv and defective_log.csv. Uploaded files need the columns event_id, machine_id, start_ts, end_ts, duration_min, logged_reason.
+
+Uploaded logs have no alarm codes, so the alarm agreement score is not informative for uploads. All data is synthetic. See docs/LIMITATIONS.md for the full list of limits.
